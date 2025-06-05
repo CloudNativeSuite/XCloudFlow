@@ -15,4 +15,3 @@ var exportCmd = &cobra.Command{
 		exec.Command("pulumi", "stack", "export", "--stack", env).Run()
 	},
 }
-
