@@ -19,6 +19,8 @@ PulumiGo/
 ├── scripts/                  # legacy 脚本（bash/sh）
 │   └── run.sh                # 模拟入口，可被替换为 Go CLI
 │
+├── docs/                    # 设计文档及方案
+│
 ├── main.go                   # 程序主入口，调用 cmd.Execute()
 ├── go.mod                    # Go module 定义
 ├── go.sum                    # Go 依赖锁定文件
@@ -34,6 +36,7 @@ PulumiGo/
 - pulumi/	用于封装 pulumi.Run() 中定义的基础设施资源
 - scripts/	用于兼容旧 run.sh 方式，也方便对比
 - config/	按环境管理 config & inventory 等配置
+- docs/         存放设计文档与方案
 - Makefile	简化 build, run, up, down, ansible 等命令
 
 
