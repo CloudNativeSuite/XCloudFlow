@@ -55,8 +55,36 @@
 - 通过成本分析工具（如 AWS Cost Explorer、Azure Cost Management、阿里云成本管家）监控费用，并结合标签策略进行细分与优化。
 
 ## 7. 资源状态存储
+在多云环境下，资源之间的依赖关系复杂，采用图数据库存储资源状态和关系可以更清晰地展示架构拓扑并便于查询。本方案推荐使用 **Dgraph**（纯 Go/C++ 实现，无需 Java 运行时），也可根据团队习惯选择基于 PostgreSQL 的图数据库扩展。
 
-在多云环境下，资源之间的依赖关系复杂，采用图数据库存储资源状态和关系可以更清晰地展示架构拓扑并便于查询。可选用 **Dgraph** 等以 Go/C++ 实现或基于 PostgreSQL 扩展的图数据库，以避免对 Java 运行环境的依赖。
+### Dgraph 架构与示例 Schema
+
+```graphql
+type Resource {
+    id:        string    @id
+    type:      string
+    name:      string
+    tags:      [string]
+    depends_on: [Resource]
+    managed_by: Stack
+    runs_on:   Cloud
+}
+
+type Stack {
+    id:       string    @id
+    env:      string
+    version:  string
+    resources: [Resource]
+}
+
+type Cloud {
+    name:     string    @id
+    resources: [Resource]
+}
+```
+
+部署时由 CI/CD 流程在每次 `pulumi up` 之后同步资源信息到 Dgraph，形成实时可查询的架构视图。
+
 
 ### 数据模型示例
 
