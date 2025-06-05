@@ -15,7 +15,7 @@
 - **Pulumi**：使用 Go 语言编写 IAC，利于与现有 Go 生态集成，便于实现更复杂的逻辑。
 - **Terraform**：在需要更丰富社区模块或与现有团队工具链兼容时，可结合使用。Pulumi 与 Terraform 模块可以互操作。
 - **Ansible**：作为配置管理及运维工具，可在资源创建完成后执行系统层面的配置。
-- **CI/CD 工具**：推荐使用 Jenkins 或 GitLab CI，统一管理不同云平台的部署流程。
+- **CI/CD 工具**：推荐使用 Gitea 进行代码托管，结合 GitHub Action / ArgoCD 统一管理不同云平台的部署流程。
 
 ## 3. 架构概览
 
