@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/spf13/cobra"
 	"PulumiGo/internal/pulumi"
+	"github.com/spf13/cobra"
 )
 
 var upCmd = &cobra.Command{

@@ -15,8 +15,7 @@
 - **Pulumi**：使用 Go 语言编写 IAC，利于与现有 Go 生态集成，便于实现更复杂的逻辑。
 - **Terraform**：在需要更丰富社区模块或与现有团队工具链兼容时，可结合使用。Pulumi 与 Terraform 模块可以互操作。
 - **Ansible**：作为配置管理及运维工具，可在资源创建完成后执行系统层面的配置。
-- **CI/CD 工具**：推荐使用 Jenkins 或 GitLab CI，统一管理不同云平台的部署流程。
-
+- **CI/CD 工具**：推荐使用 Gitea 进行代码托管，结合 GitHub Action / ArgoCD 统一管理不同云平台的部署流程。
 ## 3. 架构概览
 
 ```
@@ -54,13 +53,65 @@
 - 利用 Prometheus/Grafana 对容器化工作负载进行指标采集和展示。
 - 通过成本分析工具（如 AWS Cost Explorer、Azure Cost Management、阿里云成本管家）监控费用，并结合标签策略进行细分与优化。
 
-## 7. 未来演进
+## 7. 资源状态存储
+在多云环境下，资源之间的依赖关系复杂，采用图数据库存储资源状态和关系可以更清晰地展示架构拓扑并便于查询。本方案推荐使用 **Dgraph**（纯 Go/C++ 实现，无需 Java 运行时），也可根据团队习惯选择基于 PostgreSQL 的图数据库扩展。
+
+### Dgraph 架构与示例 Schema
+
+```graphql
+type Resource {
+    id:        string    @id
+    type:      string
+    name:      string
+    tags:      [string]
+    depends_on: [Resource]
+    managed_by: Stack
+    runs_on:   Cloud
+}
+
+type Stack {
+    id:       string    @id
+    env:      string
+    version:  string
+    resources: [Resource]
+}
+
+type Cloud {
+    name:     string    @id
+    resources: [Resource]
+}
+```
+
+部署时由 CI/CD 流程在每次 `pulumi up` 之后同步资源信息到 Dgraph，形成实时可查询的架构视图。
+
+
+### 数据模型示例
+
+```
+(Resource)-[DEPENDS_ON]->(Resource)
+(Resource)-[MANAGED_BY]->(Stack)
+(Resource)-[RUNS_ON]->(Cloud)
+```
+
+- **Resource**：表示云资源节点，包含 `id`、`type`、`name`、`tags` 等属性。
+- **Stack**：表示部署栈，可关联多个资源，属性包含环境、版本等。
+- **Cloud**：表示云平台（AWS、AliCloud、Azure、IDC）。
+
+通过图查询语言（如 Cypher）可实现以下场景：
+
+1. 快速追踪某资源的上游依赖和下游影响。
+2. 统计不同云平台上的资源分布和成本标签。
+3. 与 CI/CD 流程结合，在变更前后更新图数据库中的状态，形成实时架构视图。
+
+## 8. 未来演进
+
 
 - **跨云网络互联**：评估使用专线、VPN 或云厂商间互联服务 (AWS TGW、阿里云 CEN、Azure VNet Peering) 打通混合云网络。
 - **服务网格与多集群管理**：采用 Istio 或其他服务网格技术统一治理多云 Kubernetes 集群。
 - **自动化扩展与弹性**：结合事件驱动架构 (EDA) 及函数计算实现更灵活的弹性伸缩策略。
 
-## 8. 总结
+
+## 9. 总结
 
 该 IAC 框架旨在满足企业在多云/混合云环境下对一致性、可扩展性和安全性的需求。通过模块化设计、CI/CD 整合以及完善的安全治理，能够有效支撑全球业务的快速迭代与合规运维。
 
