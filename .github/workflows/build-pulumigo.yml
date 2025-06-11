@@ -9,14 +9,6 @@ on:
       - 'cmd/**'
       - 'internal/**'
       - '.github/workflows/build-pulumigo.yml'
-  push:
-    paths:
-      - 'main.go'
-      - 'go.mod'
-      - 'go.sum'
-      - 'cmd/**'
-      - 'internal/**'
-      - '.github/workflows/build-pulumigo.yml'
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
@@ -61,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [amd64]
 
     steps:
       - name: Download binary
