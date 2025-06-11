@@ -11,7 +11,8 @@ PulumiGo/
 │   └── ansible.go            # 执行 ansible-playbook（调用外部脚本）
 │
 ├── internal/                 # 项目内部逻辑模块（不导出）
-│   └── pulumi/infra.go       # Pulumi 基础设施部署定义
+│   ├── modules/            # 通用任务框架实现
+│   └── pulumi/             # Pulumi 相关模块
 │
 ├── config/                   # 多环境配置目录（示例）
 │   └── sit/                  # 示例环境 sit 配置文件（yaml/json 等）
@@ -33,6 +34,7 @@ PulumiGo/
 - 区域	说明
 - cmd/	所有子命令都集中在这里，Cobra 自动识别
 - internal/	Go 推荐实践：内部模块放入 internal 避免外部导入
+- modules/    通用任务框架与插件机制
 - pulumi/	用于封装 pulumi.Run() 中定义的基础设施资源
 - scripts/	用于兼容旧 run.sh 方式，也方便对比
 - config/	按环境管理 config & inventory 等配置
