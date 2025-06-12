@@ -13,11 +13,8 @@ var configPath string
 var rootCmd = &cobra.Command{
 	Use:   "PulumiGo",
 	Short: "🧰 PulumiGo - 多环境自动化管理器 (Go + Pulumi Native)",
-	Long: `📖 用法:
-
-  PulumiGo --env [环境] [命令]
-  STACK_ENV=prod CONFIG_PATH=config/prod PulumiGo up
-
+	Long: `📖 用法:    
+  PulumiGo [命令]
 支持命令:
   init      ⚙️ 初始化依赖
   up        🚀 部署资源
@@ -35,7 +32,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	rootCmd.PersistentFlags().StringVar(&env, "env", "sit", "指定环境")
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", "./config/sit", "指定配置路径")
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "./config/", "指定配置路径")
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(upCmd)
 	rootCmd.AddCommand(downCmd)
@@ -48,6 +45,13 @@ func Execute() {
 		fmt.Println(cmd.Long)
 		fmt.Println("\nFlags:")
 		cmd.Flags().PrintDefaults()
+		fmt.Println("ENV:")
+		fmt.Println("  STACK_ENV=prod")
+		fmt.Println("  CONFIG_PATH=<path>config")
+		fmt.Println("\nexample:")
+		fmt.Println("    STACK_ENV=prod CONFIG_PATH=config/  PulumiGo up")
+		fmt.Println("    Or")
+		fmt.Println("    PulumiGo up --config <path>/config/sit")
 	})
 
 	if err := rootCmd.Execute(); err != nil {
