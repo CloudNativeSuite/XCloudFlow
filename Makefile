@@ -18,9 +18,6 @@ build:
 run:
 	go run $(MAIN_FILE) --env $(ENV) up
 
-init:
-	go mod tidy
-
 up:
 	go run $(MAIN_FILE) --env $(ENV) up
 
