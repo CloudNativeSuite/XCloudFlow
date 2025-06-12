@@ -43,6 +43,13 @@ func Execute() {
 	rootCmd.AddCommand(importCmd)
 	rootCmd.AddCommand(ansibleCmd)
 
+	// Customize root help output to avoid repeating Cobra's default sections
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		fmt.Println(cmd.Long)
+		fmt.Println("\nFlags:")
+		cmd.Flags().PrintDefaults()
+	})
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println("❌", err)
 		os.Exit(1)
