@@ -3,8 +3,8 @@ package pulumi
 import (
 	"fmt"
 
+	"PulumiGo/internal/modules/utils"
 	awsVPC "PulumiGo/internal/pulumi/modules/aws/vpc"
-	"PulumiGo/internal/pulumi/utils"
 	pulumisdk "github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
