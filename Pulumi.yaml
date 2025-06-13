@@ -1,3 +1,0 @@
-name: PulumiGo
-runtime: go
-description: Minimal Pulumi project for PulumiGo CLI
