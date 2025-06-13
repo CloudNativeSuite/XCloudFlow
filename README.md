@@ -3,7 +3,7 @@
 PulumiGo/
 ├── cmd/                       # Cobra 命令模块
 │   ├── root.go               # 注册所有命令和全局参数
-│   ├── init.go               # 初始化 go mod 依赖
+│   ├── init.go               # 初始化环境与依赖
 │   ├── up.go                 # Pulumi 部署资源
 │   ├── down.go               # Pulumi 销毁资源
 │   ├── export.go             # 导出 stack 状态
@@ -48,5 +48,7 @@ PulumiGo/
 - 启动部署（Go + Pulumi） ./PulumiGo up --env sit
 - 导出 stack 状态 ./PulumiGo export
 - 调用 ansible 脚本 ./PulumiGo ansible
+- 本地初始化 ./PulumiGo init --local ~/pulumigo/iac_status
+- 数据库初始化 ./PulumiGo init --dbconfig ~/pulumigo/database.yaml
 
 > 辅以 🤖 ChatGPT 之力，愿你我皆成 AIGC 时代的创造者与编织者 🚀
