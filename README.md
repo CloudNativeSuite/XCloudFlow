@@ -14,9 +14,9 @@ PulumiGo/
 │   ├── modules/            # 通用任务框架实现
 │   └── pulumi/             # Pulumi 相关模块
 │
-├── config/                   # 多环境配置目录（示例）
-│   └── sit/                  # 示例环境 sit 配置文件（yaml/json 等）
-│
+├── example/                  # 存放示例配置
+│   └── config/
+│       └── sit/             # 示例环境 sit 配置文件（yaml/json 等），示例：auth.yaml
 ├── scripts/                  # legacy 脚本（bash/sh）
 │   └── run.sh                # 模拟入口，可被替换为 Go CLI
 │

@@ -1,0 +1,9 @@
+# Example configuration for the 'sit' environment.
+# Store credentials separately and reference them here.
+aws:
+  profile: default
+  region: us-east-1
+  credentials_file: ~/.aws/credentials
+pulumi:
+  stack: sit
+  passphrase_file: ~/.pulumi-passphrase
