@@ -24,6 +24,11 @@ var rootCmd = &cobra.Command{
   ansible   🧪 执行 ansible-playbook
   help      📖 显示帮助`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Ensure other modules relying on environment variables can
+		// access the CLI provided values.
+		os.Setenv("STACK_ENV", env)
+		os.Setenv("CONFIG_PATH", configPath)
+
 		fmt.Println("🌍 当前环境:", env)
 		fmt.Println("📁 当前配置路径:", configPath)
 		fmt.Println("🔐 Pulumi 密码文件已加载:", os.Getenv("HOME")+"/.pulumi-passphrase")
