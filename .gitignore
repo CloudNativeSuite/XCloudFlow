@@ -25,10 +25,9 @@
 .DS_Store
 Thumbs.db
 
-# Pulumi
+# Pulumi (keep project files tracked)
 .pulumi/
-/Pulumi.*.yaml
-Pulumi.yaml
+# Ignore backup files, but keep Pulumi.yaml and stack configs under version control
 *.bak.yaml
 *.backup.yaml
 *.history
