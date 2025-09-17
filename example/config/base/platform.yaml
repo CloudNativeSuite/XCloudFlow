@@ -2,5 +2,7 @@ aws:
   profile: default
   region: ap-northeast-1
   key_pairs:
-    - name: dev_key
+    - name: shared-devops
       key_file: ~/.ssh/id_rsa.pub
+pulumi:
+  passphrase_file: ~/.pulumi-passphrase

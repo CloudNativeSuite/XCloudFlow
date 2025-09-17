@@ -1,0 +1,34 @@
+org: svc-plus
+project: cloud-foundation
+defaultRegion: ap-northeast-1
+
+matrix:
+  clouds: [aws, gcp, azure, aliyun]
+  regions:
+    aws: [ap-northeast-1, ap-southeast-1]
+    gcp: [asia-northeast1]
+    azure: [japaneast]
+    aliyun: [ap-southeast-1]
+
+profiles:
+  small:
+    vpcCidr: "10.10.0.0/16"
+    subnets: ["10.10.1.0/24", "10.10.2.0/24"]
+  medium:
+    vpcCidr: "10.20.0.0/16"
+    subnets: ["10.20.1.0/24", "10.20.2.0/24", "10.20.3.0/24"]
+
+workloads:
+  - name: base-network
+    profile: small
+    components:
+      - kind: vpc
+        id: vpc-main
+      - kind: nat-gw
+        id: nat-01
+      - kind: eks-ack
+        id: k8s
+        nodePools:
+          - name: sys
+            size: 2
+            instance: "t3.large"

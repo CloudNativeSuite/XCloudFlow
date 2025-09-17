@@ -1,0 +1,6 @@
+aws:
+  profile: prod-profile
+  region: ap-southeast-1
+  credentials_file: ~/.aws/credentials
+pulumi:
+  stack: prod

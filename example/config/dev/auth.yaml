@@ -1,0 +1,6 @@
+aws:
+  profile: dev-profile
+  region: ap-northeast-1
+  credentials_file: ~/.aws/credentials
+pulumi:
+  stack: dev
