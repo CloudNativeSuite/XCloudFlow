@@ -32,3 +32,15 @@ internal/pulumi/
 
 该设计使新增任务模块仅需实现 `Handler` 接口并在 `init()` 注册，即可被 CLI 或其他调度逻辑调用，实现高度可扩展的自动化框架。
 
+## Pulumi 运行结果结构
+
+`internal/pulumi/infra.go` 中的 `DeployInfrastructure` 会返回结构化的 `DeploymentResult`，包含：
+
+- `activeEnv`：当前执行的环境（例如 dev/sit/prod）。
+- `configSources`：参与合并的配置目录列表，方便追踪来源。
+- `targets`：矩阵展开后的每个 stack 结果，元素为 `cloud`/`region`/`stack`/`status` 等字段。
+  - 当 `status=applied` 时，附带 `planPreview`、`applied`、`costEstimate`、`outputs`、`artifacts`、`previewUrl`、`updateUrl`。
+  - 当云厂商暂未支持时，返回 `status=skipped` 并给出原因。
+
+`deployHandler.Run` 会将 `DeploymentResult` 序列化为 JSON，透过框架的 `LogCollector` 返回给调用方，从而满足“资源规划预览 / 成本预估 / 交付物与输出”统一回传的需求，并兼容多云矩阵场景。
+

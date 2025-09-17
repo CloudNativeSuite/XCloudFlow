@@ -2,6 +2,7 @@ package pulumi
 
 import (
 	"context"
+	"encoding/json"
 
 	"PulumiGo/internal/modules"
 )
@@ -16,11 +17,21 @@ func (DeployTask) Type() string { return "pulumi_deploy" }
 type deployHandler struct{}
 
 func (deployHandler) Run(ctx context.Context, t modules.Task) (string, error) {
-	if err := DeployInfrastructure(); err != nil {
+	res, err := DeployInfrastructure()
+	if err != nil {
 		return "", err
 	}
-	modules.RecordResource(ctx, modules.Resource{ID: "stack", Type: "pulumi", Name: "demo"})
-	return "Pulumi stack deployed", nil
+	for _, stack := range res.Targets {
+		if stack.Status == "applied" {
+			modules.RecordResource(ctx, modules.Resource{ID: stack.Stack, Type: "pulumi", Name: stack.Cloud + "/" + stack.Region})
+		}
+	}
+
+	payload, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(payload), nil
 }
 
 func init() {

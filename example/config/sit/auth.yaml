@@ -1,9 +1,7 @@
-# Example configuration for the 'sit' environment.
-# Store credentials separately and reference them here.
+# Environment specific overrides for the 'sit' stack.
 aws:
-  profile: default
-  region: us-east-1
+  profile: sit-profile
+  region: ap-northeast-1
   credentials_file: ~/.aws/credentials
 pulumi:
   stack: sit
-  passphrase_file: ~/.pulumi-passphrase

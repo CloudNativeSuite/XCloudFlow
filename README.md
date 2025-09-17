@@ -16,7 +16,11 @@ PulumiGo/
 │
 ├── example/                  # 存放示例配置
 │   └── config/
-│       └── sit/             # 示例环境 sit 配置文件（yaml/json 等），示例：auth.yaml
+│       ├── base/            # 各环境共用的基础配置
+│       │   └── spec.yaml    # DSL：矩阵/参数模板/工作负载定义
+│       ├── dev/             # 开发环境覆盖项（多文件合并）
+│       ├── sit/             # 集成环境覆盖项
+│       └── prod/            # 生产环境覆盖项
 ├── scripts/                  # legacy 脚本（bash/sh）
 │   └── run.sh                # 模拟入口，可被替换为 Go CLI
 │
@@ -37,7 +41,7 @@ PulumiGo/
 - modules/    通用任务框架与插件机制
 - pulumi/	用于封装 pulumi.Run() 中定义的基础设施资源
 - scripts/	用于兼容旧 run.sh 方式，也方便对比
-- config/	按环境管理 config & inventory 等配置
+- config/	按环境管理 config & inventory 等配置（支持 base + env 分层，并内置矩阵 DSL）
 - docs/         存放设计文档与方案
 - Makefile	简化 build, run, up, down, ansible 等命令
 
@@ -45,7 +49,8 @@ PulumiGo/
 # ✅ 示例命令
 
 - make build
-- 启动部署（Go + Pulumi） ./PulumiGo up --env sit
+- 启动部署（Go + Pulumi） ./PulumiGo up --env sit --config ./example/config
+- 指定矩阵单点部署     ./PulumiGo up --env dev --cloud aws --region ap-northeast-1
 - 导出 stack 状态 ./PulumiGo export
 - 调用 ansible 脚本 ./PulumiGo ansible
 - 本地初始化 ./PulumiGo init --local ~/pulumigo/iac_status

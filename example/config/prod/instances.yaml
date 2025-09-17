@@ -1,0 +1,28 @@
+instances:
+  - name: prod-bastion
+    ami: ubuntu-22.04
+    type: t3.small
+    disk_size_gb: 30
+    subnet: prod-public-a
+    lifecycle: ondemand
+    env: prod
+    owner: sre
+    associate_public_ip: true
+  - name: prod-app-a
+    ami: ubuntu-22.04
+    type: t3.large
+    disk_size_gb: 80
+    subnet: prod-private-a
+    lifecycle: ondemand
+    env: prod
+    owner: app
+    associate_public_ip: false
+  - name: prod-app-b
+    ami: ubuntu-22.04
+    type: t3.large
+    disk_size_gb: 80
+    subnet: prod-private-b
+    lifecycle: ondemand
+    env: prod
+    owner: app
+    associate_public_ip: false

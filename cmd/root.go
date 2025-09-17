@@ -9,6 +9,8 @@ import (
 
 var env string
 var configPath string
+var targetCloud string
+var targetRegion string
 
 var rootCmd = &cobra.Command{
 	Use:   "PulumiGo",
@@ -28,16 +30,30 @@ var rootCmd = &cobra.Command{
 		// access the CLI provided values.
 		os.Setenv("STACK_ENV", env)
 		os.Setenv("CONFIG_PATH", configPath)
+		if targetCloud != "" {
+			os.Setenv("STACK_CLOUD", targetCloud)
+		}
+		if targetRegion != "" {
+			os.Setenv("STACK_REGION", targetRegion)
+		}
 
 		fmt.Println("🌍 当前环境:", env)
 		fmt.Println("📁 当前配置路径:", configPath)
 		fmt.Println("🔐 Pulumi 密码文件已加载:", os.Getenv("HOME")+"/.pulumi-passphrase")
+		if targetCloud != "" {
+			fmt.Println("☁️  目标云:", targetCloud)
+		}
+		if targetRegion != "" {
+			fmt.Println("📍 目标区域:", targetRegion)
+		}
 	},
 }
 
 func Execute() {
 	rootCmd.PersistentFlags().StringVar(&env, "env", "sit", "指定环境")
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "./config/", "指定配置路径")
+	rootCmd.PersistentFlags().StringVar(&targetCloud, "cloud", "", "仅部署指定云 (matrix 覆盖)")
+	rootCmd.PersistentFlags().StringVar(&targetRegion, "region", "", "仅部署指定区域")
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(upCmd)
 	rootCmd.AddCommand(downCmd)
@@ -53,10 +69,12 @@ func Execute() {
 		fmt.Println("ENV:")
 		fmt.Println("  STACK_ENV=prod")
 		fmt.Println("  CONFIG_PATH=<path>config")
+		fmt.Println("  STACK_CLOUD=aws")
+		fmt.Println("  STACK_REGION=ap-northeast-1")
 		fmt.Println("\nexample:")
-		fmt.Println("    STACK_ENV=prod CONFIG_PATH=config/  PulumiGo up")
+		fmt.Println("    STACK_ENV=prod CONFIG_PATH=config/ PulumiGo up")
 		fmt.Println("    Or")
-		fmt.Println("    PulumiGo up --config <path>/config/sit")
+		fmt.Println("    PulumiGo up --config <path>/config/sit --cloud aws --region ap-northeast-1")
 	})
 
 	if err := rootCmd.Execute(); err != nil {

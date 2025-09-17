@@ -27,7 +27,7 @@ type InstanceConfig struct {
 
 type InstanceOutputs map[string]pulumi.StringOutput
 
-func resolveAMI(ctx *pulumi.Context, keyword string, region string) (string, error) {
+func resolveAMI(ctx *pulumi.Context, keyword string) (string, error) {
 	if strings.HasPrefix(keyword, "ami-") {
 		return keyword, nil
 	}
@@ -83,7 +83,7 @@ func CreateInstances(ctx *pulumi.Context, configs []InstanceConfig, subnets map[
 		if !ok {
 			return nil, fmt.Errorf("subnet %s not found", c.Subnet)
 		}
-		ami, err := resolveAMI(ctx, c.Ami, ctx.Region())
+		ami, err := resolveAMI(ctx, c.Ami)
 		if err != nil {
 			return nil, err
 		}

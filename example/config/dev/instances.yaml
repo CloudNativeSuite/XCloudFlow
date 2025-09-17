@@ -1,0 +1,19 @@
+instances:
+  - name: dev-bastion
+    ami: ubuntu-22.04
+    type: t3.micro
+    disk_size_gb: 20
+    subnet: dev-public-a
+    lifecycle: ondemand
+    env: dev
+    owner: platform
+    associate_public_ip: true
+  - name: dev-runner
+    ami: ubuntu-22.04
+    type: t3.small
+    disk_size_gb: 40
+    subnet: dev-private-a
+    lifecycle: spot
+    env: dev
+    owner: cicd
+    associate_public_ip: false
