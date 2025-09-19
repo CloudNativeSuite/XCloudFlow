@@ -1,3 +1,4 @@
+apiVersion: v2
 org: svc-plus
 project: cloud-foundation
 defaultRegion: ap-northeast-1
@@ -5,18 +6,104 @@ defaultRegion: ap-northeast-1
 matrix:
   clouds: [aws, gcp, azure, aliyun]
   regions:
-    aws: [ap-northeast-1, ap-southeast-1]
-    gcp: [asia-northeast1]
+    aws:   [ap-northeast-1, ap-southeast-1]
+    gcp:   [asia-northeast1]
     azure: [japaneast]
     aliyun: [ap-southeast-1]
+
+# 统一凭据引用（不存密钥，全部走 OIDC / 外部密钥管理）
+credentials:
+  mode: oidc
+  refs:
+    github:
+      issuer: https://token.actions.githubusercontent.com
+      claims:
+        sub: repo:<OWNER>/<REPO>:ref:refs/heads/main
+    gitlab:
+      issuer: https://gitlab.com
+      claims:
+        sub: project_path:<NAMESPACE>/<PROJECT>:ref_type:branch:ref:main
+  # 对接外部密管（可选）
+  keyStores:
+    - kind: aws-kms
+      id: arn:aws:kms:ap-northeast-1:111122223333:key/abcd-...
+    - kind: gcp-kms
+      id: projects/xxx/locations/global/keyRings/xxx/cryptoKeys/xxx
+
+providers:
+  # 统一本地/CI 执行时的 provider 选择与默认参数
+  aws:
+    regionFrom: matrix
+    auth: oidc
+    roleArnRef: outputs://infra/aws/gh-oidc-role-arn
+  gcp:
+    project: your-gcp-project
+    auth: oidc
+    wifProviderRef: outputs://infra/gcp/wif-provider
+    serviceAccountRef: outputs://infra/gcp/sa-email
+  azure:
+    tenantId: ${AZURE_TENANT_ID}
+    subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+    clientIdRef: outputs://infra/azure/app-id
+  aliyun:
+    regionFrom: matrix
+    auth: oidc
+    roleArnRef: outputs://infra/aliyun/ram-role-arn
+
+saas:                         # 可申领/绑定外部 SaaS（可选）
+  grafana:
+    url: https://grafana.example.com
+    datasourceBindings:
+      - prometheus
+      - loki
+  datadog:
+    site: datadoghq.com
+    # token 不放这里，走 CI OIDC -> Secrets Manager 注入
 
 profiles:
   small:
     vpcCidr: "10.10.0.0/16"
-    subnets: ["10.10.1.0/24", "10.10.2.0/24"]
+    subnets: ["10.10.1.0/24","10.10.2.0/24"]
   medium:
     vpcCidr: "10.20.0.0/16"
-    subnets: ["10.20.1.0/24", "10.20.2.0/24", "10.20.3.0/24"]
+    subnets: ["10.20.1.0/24","10.20.2.0/24","10.20.3.0/24"]
+
+# IaC 模块目录映射与输入规范（声明即注册）
+modules:
+  - name: vpc-aws
+    type: terraform
+    source: ./catalogs/terraform/aws/vpc
+    inputs:
+      cidr_block: ${profile.vpcCidr}
+      public_subnets: ${profile.subnets}
+  - name: nat-aws
+    type: terraform
+    source: ./catalogs/terraform/aws/nat-gateway
+    inputs:
+      enable_nat: true
+  - name: eks
+    type: pulumi
+    language: go
+    source: ./catalogs/pulumi/aws/eks
+    inputs:
+      nodePools: ${component.nodePools}   # 从 workloads 组件透传
+  - name: ack
+    type: pulumi
+    language: go
+    source: ./catalogs/pulumi/aliyun/ack
+  - name: observability
+    type: helm
+    source: ./catalogs/helm/obs-stack
+    values:
+      loki.enabled: true
+      tempo.enabled: true
+  - name: edge-addon
+    type: kustomize
+    source: ./catalogs/kustomize/edge-addon
+  - name: harden-baseline
+    type: ansible
+    source: ./catalogs/ansible/harden
+    limit: all
 
 workloads:
   - name: base-network
@@ -24,11 +111,81 @@ workloads:
     components:
       - kind: vpc
         id: vpc-main
+        # 绑定不同云时的模块映射
+        mapping:
+          aws: vpc-aws
+          aliyun: catalogs/terraform/aliyun/vpc
       - kind: nat-gw
         id: nat-01
+        mapping:
+          aws: nat-aws
       - kind: eks-ack
         id: k8s
         nodePools:
           - name: sys
             size: 2
             instance: "t3.large"
+        mapping:
+          aws: eks
+          aliyun: ack
+      - kind: observability
+        id: obs
+        mapping:
+          aws: observability
+          gcp: observability
+          azure: observability
+
+# 统一的执行编排与目标（本地/CI/远端）
+pipelines:
+  # 本地执行：让开发者能在 Mac/Linux 上跑
+  local:
+    runner: shell
+    steps:
+      - name: preflight
+        script: ./playbooks/preflight.sh
+      - name: plan
+        action: iac.plan
+        targets: ["workloads.base-network"]
+      - name: apply
+        action: iac.apply
+        approve: manual   # 本地可手动确认
+  # GitHub CI
+  github:
+    workflow: .github/workflows/iac.yml
+    dispatch:
+      inputs:
+        cloud: [aws, gcp, azure, aliyun, all]
+        stack_path: optional
+    env:
+      OIDC: enabled
+  # GitLab CI
+  gitlab:
+    pipeline: .gitlab-ci.yml
+    variables:
+      OIDC: enabled
+    stages: [plan, apply]
+
+# 执行策略与并发
+execution:
+  strategy:
+    mode: matrix
+    concurrency: 4
+  selection:
+    include:
+      - cloud: aws
+      - cloud: aliyun
+    exclude:
+      - region: ap-southeast-1
+  hooks:
+    beforeAll:
+      - kind: ansible
+        ref: harden-baseline
+    afterAll:
+      - kind: script
+        script: ./playbooks/harden-baseline.sh
+
+gitops:
+  repo: "github.com/<OWNER>/<REPO>"
+  path: "/"
+  branch: main
+  # 支持 repository_dispatch / workflow_dispatch / gitlab trigger
