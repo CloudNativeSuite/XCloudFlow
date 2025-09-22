@@ -4,15 +4,14 @@
 
 ## 0. 决策矩阵（策略基线）
 
-| 层级 | 典型资源 | 变化频率 | 默认执行引擎 | 调谐策略 | 漂移策略 | 门禁策略 | 备份策略 |
+| 类别 | 典型资源 | 变化频率 | 首选工具 | 调谐策略 | 漂移策略 | 变更门禁 | 备份/RPO |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| IaaS / Foundation | VPC、子网、NAT、KMS、DNS Zone、基础集群 | 低 | Terraform / Pulumi | `on_drift`（以检测为主） | `alert` | 强审批 + 变更会签 | 配置快照（State Snapshot / CMDB） |
-| K8s 基座 | Cluster、NodePool、CNI、Ingress 控制器 | 低-中 | Terraform / Pulumi（建集群） + 控制器（日常） | `periodic` | `alert` | 审批 + 维护窗 | 集群快照 / 维护窗策略 |
-| PaaS / 平台服务 | RDS、Kafka、Redis、S3、Load Balancer、队列 | 中 | 控制器（原生 Provider 或 Terraform 桥接） | `periodic` | `correct` | 按环境差异化 | 变更前快照 + 自动验证 |
-| Applications | Deployment、Service、HPA、Job、DNS 记录 | 高 | GitOps（原生 K8s）/ Playbook | `continuous` | `correct` | 自动门禁（基于策略） | 自动回滚 / 快速恢复 |
-| Config / Ops | OS 配置、Agent、模板、巡检任务 | 高 | Playbook（Ansible/SSH/自研执行器） | `on_change` | `correct` | 自动审批 | 无（使用幂等剧本） |
+| Foundation（地基） | VPC/子网/路由、NAT、KMS、基础 DNS zone、K8s 集群 | 低 | Terraform/Pulumi | 检测为主（不开自动纠偏） | Alert（禁止自动修） | 强制审批（变更窗口） | 重要：State 远端、配置快照 |
+| Platform（平台） | RDS/CloudSQL、Kafka/Redis、对象存储桶、队列、Ingress/LB | 中 | Crossplane 或 控制器 | 周期/事件调谐（保守） | Correct（可纠偏） | 按环境（prod 需审批） | 变更前自动备份，RPO 15–60m |
+| Application（应用） | 部署/服务、HPA、Config、短期 DNS 记录 | 高 | GitOps（K8s）/ 控制器 + Ansible | 持续调谐 | Correct | 自动 | 无需（或镜像可重建） |
+| Ephemeral（短命） | 预发资源、沙箱账户、临时 Topic/队列、实验性存储 | 高 | 控制器（TTL/Owner） | 持续 + TTL | GC | 无 | 无（或最低） |
 
-**核心原则：** 越靠近基础设施地基，越倾向检测与审批；越靠近应用与运维，越强调自动化、持续纠偏与快速回滚。
+**原则：** 越“地基”，越保守（检测 > 纠偏 > 审批）；越贴近应用，越自动化（持续纠偏、快速回滚）。
 
 以上矩阵被固化为平台默认策略，驱动策略路由、审批、备份、调谐频率等关键行为。
 
