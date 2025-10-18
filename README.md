@@ -2,11 +2,27 @@
 
 XCloudFlow 将多云基础设施、配置编排与边缘执行整合在一个仓库中。仓库内包含三个相互独立、又能协同工作的 CLI：
 
+## 仓库概览
+
+XCloudFlow 是一个面向多云场景的单体仓库，聚合了基础设施管理、配置编排和边缘执行三大能力，并通过三个可协同的 CLI 组件来覆盖从控制平面到终端节点的自动化流程。
+
+## 核心组件
+
+- **xcloud-cli（Go）**：定位为 Terraform/Pulumi 场景的控制平面 CLI，提供 `up`、`down`、`export`、`import`、`ansible` 等命令来统一管理多云部署的全生命周期。
+- **xconfig（Go）**：类 Ansible 的任务执行器，支持 `remote` 和 `playbook` 等子命令，可运行多种模块（shell、command、copy、service、template、setup、apt/yum 等）完成批量配置及运维操作。
+- **xconfig-agent（Rust）**：轻量级边缘 Agent，按照配置定期从 Git 仓库拉取 Playbook 并在本地执行，执行结果回写到指定目录，适用于无人值守或边缘环境。
+
 | 目录            | 语言 | 说明 |
 |-----------------|------|------|
 | `xcloud-cli/`   | Go   | 面向 Terraform/Pulumi 场景的控制平面 CLI，统一管理多云部署生命周期。|
 | `xconfig/`      | Go   | 类 Ansible 的任务/剧本执行器，提供 `remote`/`playbook` 等命令。|
 | `xconfig-agent/`| Rust | 轻量级边缘 Agent，周期性拉取剧本并在本地执行，支撑无人值守环境。|
+
+## 关键特性
+
+- 提供聚合型根目录 Makefile，一键触发各子项目的构建与演示命令，降低多组件协作门槛。
+- 文档体系覆盖整体架构、模块化执行框架、弹性基础设施即代码设计及 Playbook DSL 规范，为二次开发和平台扩展提供详实参考。
+- 全栈设计强调以 GitOps 为唯一真相源，通过策略路由、依赖图和统一执行引擎，构建多云一致性的计划/差异/审批/审计闭环。
 
 ---
 
