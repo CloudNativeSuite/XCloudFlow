@@ -1,50 +1,59 @@
-APP_NAME := PulumiGo
-MAIN_FILE := main.go
+.PHONY: help all xcloud-init xcloud-build xcloud-run xcloud-up xcloud-down xcloud-export xcloud-import xcloud-ansible xconfig-init xconfig-build xconfig-run xconfig-playbook xconfig-agent-build xconfig-agent-run xconfig-agent-install
+
 ENV ?= sit
-CONFIG ?= ./config/$(ENV)
-
-.PHONY: all build run clean init up down export import ansible help
-
-all: build
-
-init:
-	GOPROXY=https://goproxy.cn,direct go get github.com/spf13/cobra@latest
-	GOPROXY=https://goproxy.cn,direct go get -u github.com/pulumi/pulumi/sdk/v3
-	go mod tidy
-
-build:
-	go build -o $(APP_NAME) $(MAIN_FILE)
-
-run:
-	go run $(MAIN_FILE) --env $(ENV) up
-
-up:
-	go run $(MAIN_FILE) --env $(ENV) up
-
-down:
-	go run $(MAIN_FILE) --env $(ENV) down
-
-export:
-	go run $(MAIN_FILE) --env $(ENV) export
-
-import:
-	go run $(MAIN_FILE) --env $(ENV) import
-
-ansible:
-	go run $(MAIN_FILE) --env $(ENV) ansible
-
-clean:
-	rm -f $(APP_NAME)
 
 help:
-	@echo "🔧 PulumiGo CLI Usage"
-	@echo ""
-	@echo "make build           编译可执行文件"
-	@echo "make run             启动并部署（默认 ENV=sit）"
-	@echo "make up              部署资源"
-	@echo "make down            销毁资源"
-	@echo "make export          导出 stack 状态"
-	@echo "make import          导入 stack 状态"
-	@echo "make ansible         执行 ansible playbook"
-	@echo "make init            初始化依赖 (go mod tidy)"
-	@echo "make clean           清理构建产物"
+	@echo "🚀 Project Targets"
+	@echo "  make xcloud-build          # 构建 Go 版 XCloud CLI"
+	@echo "  make xcloud-run ENV=sit    # 运行 XCloud CLI (示例)"
+	@echo "  make xconfig-build         # 构建 Go 版 Xconfig"
+	@echo "  make xconfig-playbook      # 使用默认示例执行 playbook"
+	@echo "  make xconfig-agent-build   # 构建 Rust 版 xconfig-agent"
+	@echo "  make xconfig-agent-run     # 运行 xconfig-agent oneshot"
+
+all: help
+
+xcloud-init:
+	$(MAKE) -C xcloud-cli init
+
+xcloud-build:
+	$(MAKE) -C xcloud-cli build
+
+xcloud-run:
+	$(MAKE) -C xcloud-cli run ENV=$(ENV)
+
+xcloud-up:
+	$(MAKE) -C xcloud-cli up ENV=$(ENV)
+
+xcloud-down:
+	$(MAKE) -C xcloud-cli down ENV=$(ENV)
+
+xcloud-export:
+	$(MAKE) -C xcloud-cli export ENV=$(ENV)
+
+xcloud-import:
+	$(MAKE) -C xcloud-cli import ENV=$(ENV)
+
+xcloud-ansible:
+	$(MAKE) -C xcloud-cli ansible ENV=$(ENV)
+
+xconfig-init:
+	$(MAKE) -C xconfig init
+
+xconfig-build:
+	$(MAKE) -C xconfig build
+
+xconfig-run:
+	$(MAKE) -C xconfig run
+
+xconfig-playbook:
+	$(MAKE) -C xconfig playbook
+
+xconfig-agent-build:
+	$(MAKE) -C xconfig-agent build
+
+xconfig-agent-run:
+	$(MAKE) -C xconfig-agent run
+
+xconfig-agent-install:
+	$(MAKE) -C xconfig-agent install

@@ -1,0 +1,19 @@
+[Unit]
+Description=Xconfig Agent Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/xconfig-agent daemon
+Restart=on-failure
+RestartSec=5
+User=root
+Environment=RUST_LOG=info
+WorkingDirectory=/var/lib/xconfig-agent
+
+# 可选日志文件（如需）
+# StandardOutput=append:/var/log/xconfig-agent.log
+# StandardError=append:/var/log/xconfig-agent.err
+
+[Install]
+WantedBy=multi-user.target

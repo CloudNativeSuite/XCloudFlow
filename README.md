@@ -1,136 +1,70 @@
-# 🧶 Xconfig
+# ☁️ XCloudFlow Monorepo
 
-**Xconfig** 是一个融合任务编排、架构建模和轻量执行能力的DevOps 工具，灵感源于 Ansible，但更灵活、模块化，支持图模型导出与插件扩展，并具备独立运行的 Rust 轻量 Agent。
+XCloudFlow 将多云基础设施、配置编排与边缘执行整合在一个仓库中。仓库内包含三个相互独立、又能协同工作的 CLI：
 
----
-
-## 🧩 特性概览
-
-### ✅ 控制端（Go 实现）
-- 🛠️ `xconfig remote`：类 Ansible 远程命令执行（内置 shell、command、copy、service 等模块）
-- 📜 `xconfig playbook`：YAML 多步骤任务编排（支持 template、setup、apt/yum 等模块）
-- 🔐 `xconfig vault`：加解密配置 (TODO)
-- 🧠 `xconfig cmdb`：导出拓扑图数据库 (TODO)
-- 🔌 `xconfig plugin`：支持插件执行，预留 WASM 接口 (TODO)
-
-### ✅ Agent 端（Rust 实现）
-- 🧩 定时拉取配置并执行命令/copy/service 等操作
-- 📦 独立运行、轻量部署，可在任意主机常驻执行
+| 目录            | 语言 | 说明 |
+|-----------------|------|------|
+| `xcloud-cli/`   | Go   | 面向 Terraform/Pulumi 场景的控制平面 CLI，统一管理多云部署生命周期。|
+| `xconfig/`      | Go   | 类 Ansible 的任务/剧本执行器，提供 `remote`/`playbook` 等命令。|
+| `xconfig-agent/`| Rust | 轻量级边缘 Agent，周期性拉取剧本并在本地执行，支撑无人值守环境。|
 
 ---
 
-## 🚀 快速开始（控制端 CLI）
+## 🚀 快速开始
 
-1. 编译 make
-2. 示例 inventory 文件（INI 格式）
-
+### 1. xcloud-cli（控制平面 CLI）
+```bash
+cd xcloud-cli
+make build        # or `go run main.go --env sit up`
 ```
-[all]
-demo           ansible_host=192.168.124.77     ansible_ssh_user=shenlan role=demo
-cn-hub         ansible_host=1.15.155.245       ansible_ssh_user=ubuntu
-global-hub     ansible_host=2.15.135.215       ansible_ssh_user=centos
+常用子命令：`up`、`down`、`export`、`import`、`ansible`。详情见 `xcloud-cli/Makefile` 或 `xcloud-cli/cmd/*.go`。
 
-[all:vars]
-ansible_port=22
-ansible_ssh_private_key_file=~/.ssh/id_rsa
-env='prod'
+### 2. xconfig（任务编排 CLI）
+```bash
+cd xconfig
+make build
+./xconfig remote all -i example/inventory -m shell -a 'id'
 ```
+- `xconfig remote`：远程命令执行（shell/command/copy/service 等模块）。
+- `xconfig playbook`：运行 YAML Playbook，支持 `template`、`setup`、`apt/yum` 等模块。
+- 更多示例参见 `xconfig/example/` 与 `xconfig/README.md`。
 
-3. 远程执行命令（Shell 模块）
-
-xconfig remote all -i example/inventory -m shell -a 'id'
-
-4. 远程执行命令（Command 模块）
-
-xconfig remote all -i example/inventory -m command -a '/usr/bin/id'
-
-5. 输出聚合展示（推荐用于大规模场景
-
-xconfig remote all -i example/inventory -m shell -a 'id' --aggregate
-
-6. 上传并执行脚本
-
-xconfig remote all -i example/inventory -m script -a example/uname.sh
-
-7. Dry-run 模式预览执行效果
-
-xconfig remote all -i example/inventory -m shell -a 'id' -C
-
-8. 显示文件或模板差异（可与 -A、-C 组合）
-
-xconfig remote all -i example/inventory -m template -a "example.j2:/tmp/out.yml" -D -C -A
-
-9. 指定单个主机运行命令
-
-xconfig remote cn-hub -i example/inventory -m shell -a 'uptime'
-
-10. 聚合输出执行脚本结果
-
-xconfig remote all -i example/inventory -m script -a example/nproc.sh --aggregate
-
-11. 运行 Playbook 文件
-
-xconfig playbook -i example/inventory example/run_example -i example/inventory
-
-可选：执行更复杂的示例
-
-- xconfig playbook -i example/inventory example/playbooks/system-check.yaml 
-- xconfig playbook -i example/inventory example/playbooks/set-password.yml -e password=YOURPASS
-- xconfig playbook -i example/inventory example/deploy_deepflow_agent
-
-# 📦 Agent 支持命令说明
-
-| 命令格式                      | 功能说明                                               |
-|-----------------------------|--------------------------------------------------------|
-| `cw-agent oneshot`           | 一次性从 `/etc/cw-agent.conf` 拉取 Git 仓库并执行 Playbook |
-| `cw-agent daemon`            | 持续运行，按 interval 定期拉取并执行                   |
-| `cw-agent playbook --file x.yaml` | 执行指定本地 Playbook 文件（仅作用于本机）           |
-| `cw-agent status`            | 输出最近一次任务执行结果（来自 `/var/lib/cw-agent/`） |
-| `cw-agent version`           | 显示版本号信息
-
-# ⚙️ 全局参数
-
-| 参数              | 描述                                               |
-|-------------------|----------------------------------------------------|
-| `--aggregate`, `-A` | 聚合输出相同结果的主机（大规模场景推荐）         |
-| `--check`, `-C`     | Dry-run 模式，不实际执行命令（TODO）              |
-| `--diff`, `-D`      | 当修改文件和模板时显示差异                         |
-| `--extra-vars`, `-e` | 运行时变量，覆盖 Playbook 中的 `vars`             |
-
-# 控制端（Go 实现）
-
-📁 项目结构
+### 3. xconfig-agent（边缘执行 Agent）
+```bash
+cd xconfig-agent
+cargo build --release
+./target/release/xconfig-agent oneshot
 ```
-Xconfig/
-├── cmd/                  # CLI 命令定义（Cobra）
-├── core/                 # 核心执行器、解析器、拓扑建模
-├── internal/             # SSH 库、Inventory 处理
-├── plugins/              # 插件接口定义与运行（TODO）
-├── example/              # 示例 inventory + 脚本
-├── banner.txt            # CLI 欢迎图标
-├── XconfigAgent/      # Rust 版 cw-agent
-│   └── src/              # agent 源码目录
-└── main.go
+默认配置从 `/etc/xconfig-agent.conf` 拉取 Git 仓库、读取 Playbook，并将执行结果落盘到 `/var/lib/xconfig-agent/`。
+
+---
+
+## 🧰 仓库级 Makefile
+
+根目录提供一份聚合 `Makefile`，可快速调用各子项目命令：
+```bash
+make help
+make xcloud-build
+make xconfig-playbook
+make xconfig-agent-run
 ```
 
-#🧠 Xconfig Agent（Rust 实现）
+---
 
-📦 结构目录
-```
-Xconfig-agent/
-├── Cargo.toml
-├── cw-agent.service              # systemd 单元文件（可选）
-└── src/
-    ├── main.rs                  # CLI 入口，启动/守护/状态
-    ├── scheduler.rs             # 定时拉取与调度执行
-    ├── config.rs                # 解析配置（JSON、Git、HTTP）
-    ├── executor.rs              # 支持 command/copy/service 执行
-    ├── result_store.rs          # 本地 JSON/DB 结果保存
-    └── models.rs                # 配置/结果结构体定义
-```
+## 📚 设计文档
 
-# 🔮 愿景
+详见 `docs/` 目录，涵盖：
+- `XCloudFlowDesign.md`：整体平台架构
+- `ModuleExecutionDesign.md`：模块化执行框架设计
+- `ElasticIACDesign.md`：Go + Pulumi 弹性 IAC 架构
+- `craftweave-playbook-spec.md`：Xconfig Playbook DSL
 
-Xconfig 旨在成为一个轻量级 DevOps 工具，融合任务调度、配置编排、架构建模、图数据库与 AI 辅助的智能插件系统，构建“人-机-架构”高效协作闭环。
+---
 
-> 借助 🤖 ChatGPT 之力，愿你我皆成 AIGC 时代的创造者与织梦者 🚀
+## 🤝 贡献
+
+1. Fork 并创建功能分支。
+2. 在对应子目录内运行 `make test`/`cargo test`（如适用）。
+3. 提交 PR 并附上测试记录。
+
+欢迎提出 Issue 或 PR，一起打造云管 + 配置 + 边缘执行的一体化工作流。☁️🧵🦀
