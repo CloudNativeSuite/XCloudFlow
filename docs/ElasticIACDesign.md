@@ -7,7 +7,7 @@
 项目遵循 Go Module 和 `cobra` 命令行结构：
 
 ```
-PulumiGo/
+xcloud-cli/
 ├── cmd/               # CLI 命令入口
 ├── internal/          # 内部实现，避免外部引用
 │   └── pulumi/        # Pulumi 基础设施代码
@@ -84,7 +84,7 @@ func Send(payload []byte) error {
 
 ## 5. 部署流程示例
 
-1. 运行 `PulumiGo up` 部署基础设施。
+1. 运行 `xcloud-cli up` 部署基础设施。
 2. 部署成功后调用 `cmdb.Register` 将资源信息同步到 CMDB。
 3. 使用 `ansible.RunPlaybook` 对新建实例执行后续配置。
 4. 若需要 AI 调度，可通过 `mcp.Send` 将状态汇报给 MCP 系统。

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.xconfig.agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/xconfig-agent</string>
+        <string>daemon</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>WorkingDirectory</key>
+    <string>/var/lib/xconfig-agent</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/xconfig-agent.out</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/xconfig-agent.err</string>
+</dict>
+</plist>

@@ -70,7 +70,7 @@ curl --request POST \
 
 ## 4. 解析运行结果
 
-`PulumiGo up` 的输出形如：
+`xcloud up` 的输出形如：
 ```json
 {
   "activeEnv": "dev",
