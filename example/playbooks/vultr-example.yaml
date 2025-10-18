@@ -1,0 +1,18 @@
+- name: Create Vultr instances
+  hosts: localhost
+  tasks:
+    - name: Create CPU instance
+      vultr:
+        api_key: "YOUR_API_KEY"
+        region: "ewr"
+        plan: "vc2-1c-1gb"
+        os_id: 1746
+        label: "xconfig-cpu"
+    - name: Create GPU instance
+      vultr:
+        api_key: "YOUR_API_KEY"
+        region: "ewr"
+        plan: "gpu-1c-5gb"
+        os_id: 1746
+        label: "xconfig-gpu"
+

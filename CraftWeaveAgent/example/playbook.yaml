@@ -1,0 +1,4 @@
+- name: Hello Test
+  tasks:
+    - name: Say hello
+      shell: echo 'hello world'

@@ -1,0 +1,21 @@
+- name: Module feature test
+  hosts: all
+  tasks:
+    - name: Gather info
+      setup: true
+    - name: Set custom var
+      set_fact:
+        greet: Hello
+    - name: Echo greeting
+      shell: echo "{{ greet }}"
+      register: greet_out
+    - name: Copy file
+      copy:
+        src: ../../motd.tmpl
+        dest: /tmp/motd-copy
+    - name: Check file
+      stat:
+        path: /tmp/motd-copy
+    - name: Print result
+      debug:
+        msg: "output is {{ greet_out }}"

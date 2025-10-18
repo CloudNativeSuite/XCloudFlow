@@ -1,0 +1,68 @@
+---
+- name: Setup DeepFlow Agent logrotate with systemd timer
+  hosts: all
+  become: yes
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: Ensure logrotate is installed
+      package:
+        name: logrotate
+        state: present
+
+    - name: Create logrotate config for deepflow-agent
+      copy:
+        dest: "{{ logrotate.config_path }}"
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          {{ logrotate.path }} {
+              {{ logrotate.frequency }}
+              rotate {{ logrotate.rotate }}
+              {% if logrotate.compress %}compress{% endif %}
+              missingok
+              notifempty
+              delaycompress
+              {% if logrotate.maxsize %}maxsize {{ logrotate.maxsize }}{% endif %}
+              {% if logrotate.dateext %}dateext{% endif %}
+              {% if logrotate.copytruncate %}copytruncate{% endif %}
+          }
+
+    - name: Create systemd service
+      copy:
+        dest: /etc/systemd/system/logrotate-deepflow-agent.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Rotate DeepFlow Agent Logs
+          Wants=logrotate-deepflow-agent.timer
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/sbin/logrotate {{ logrotate.config_path }}
+
+    - name: Create systemd timer
+      copy:
+        dest: /etc/systemd/system/logrotate-deepflow-agent.timer
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Daily log rotation for DeepFlow Agent
+
+          [Timer]
+          OnCalendar=daily
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Reload systemd
+      command: systemctl daemon-reexec
+
+    - name: Enable and start logrotate timer
+      systemd:
+        name: logrotate-deepflow-agent.timer
+        enabled: yes
+        state: started

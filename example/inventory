@@ -1,0 +1,35 @@
+[all]
+
+[hub]
+cn-hub                  ansible_host=1.15.155.245       ansible_ssh_user=ubuntu
+global-hub              ansible_host=167.179.72.223     ansible_ssh_user=root
+icp-huawei              ansible_host=139.9.139.22       ansible_ssh_user=root
+icp-aliyun              ansible_host=47.120.61.35       ansible_ssh_user=root
+
+[proxy]
+tky-proxy               ansible_host=52.196.108.28      ansible_ssh_user=ubuntu
+us-proxy                ansible_host=54.183.32.0        ansible_ssh_user=ubuntu
+ca-proxy                ansible_host=3.98.174.218       ansible_ssh_user=ubuntu
+
+
+[all:vars]
+domain='svc.plus'
+ansible_port=22
+ansible_ssh_user=ubuntu
+ansible_ssh_pass=''
+# custom var for all hosts
+env='prod'
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+ansible_host_key_checking=False
+
+# SSH 密钥或密码（二选一）
+# ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_ssh_pass=your_password
+
+# DeepFlow agent 配置变量
+controller_ips=["10.10.10.10", "10.10.10.11"]
+vtap_group_id="g-P22vLIMdB6"
+
+# DeepFlow agent 安装包位置
+agent_base_dir="deepflow-agent-for-linux"
+agent_package_name="deepflow-agent-1.0-5407.systemd.deb"

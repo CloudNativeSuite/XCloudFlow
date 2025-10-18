@@ -1,0 +1,5 @@
+- name: Show current date
+  shell: date
+
+- name: Display custom MOTD
+  shell: cat /tmp/motd.txt

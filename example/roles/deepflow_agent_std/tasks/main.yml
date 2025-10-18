@@ -1,0 +1,95 @@
+- name: Gather facts
+  setup:
+
+- name: Detect init system
+  set_fact:
+    init_system: >-
+      {{ 'systemd' if ansible_service_mgr == 'systemd' else 'upstart' }}
+
+- name: Detect package type
+  set_fact:
+    pkg_type: >-
+      {{ 'rpm' if ansible_pkg_mgr == 'yum' else 'deb' if ansible_pkg_mgr == 'apt' else 'unknown' }}
+
+- name: Detect arch dir
+  set_fact:
+    arch_dir: >-
+      {{ 'aarch64' if ansible_architecture in ['aarch64', 'arm64'] else 'x86_64' if ansible_architecture == 'x86_64' else 'unknown' }}
+
+- name: Fail if unsupported platform
+  fail:
+    msg: "Unsupported platform: {{ ansible_distribution }} {{ ansible_distribution_major_version }} ({{ ansible_architecture }})"
+  when: arch_dir == 'unknown' or pkg_type == 'unknown'
+
+- name: Set agent package filename (local)
+  set_fact:
+    agent_pkg_file: "{{ agent_base_dir }}/deepflow-agent-1.0-5407.{{ init_system }}{% if arch_dir == 'aarch64' %}-arm64{% endif %}.{{ pkg_type }}"
+
+- name: Ensure agent package exists on control node
+  stat:
+    path: "{{ agent_pkg_file }}"
+  register: agent_pkg_stat
+  delegate_to: localhost
+  become: false
+
+- name: Fail if agent package not found
+  fail:
+    msg: "Agent package {{ agent_pkg_file }} not found on control node"
+  when: not agent_pkg_stat.stat.exists
+  delegate_to: localhost
+  become: false
+
+- name: Copy agent package to /tmp on target
+  copy:
+    src: "{{ agent_pkg_file }}"
+    dest: "/tmp/deepflow-agent.{{ pkg_type }}"
+    mode: '0644'
+
+- name: Install .rpm from /tmp
+  when: pkg_type == "rpm"
+  become: true
+  yum:
+    name: "/tmp/deepflow-agent.{{ pkg_type }}"
+    state: present
+
+- name: Install .deb from /tmp
+  when: pkg_type == "deb"
+  become: true
+  apt:
+    deb: "/tmp/deepflow-agent.{{ pkg_type }}"
+    state: present
+
+- name: Render config to /tmp
+  template:
+    src: deepflow-agent.yaml.j2
+    dest: "/tmp/deepflow-agent.yaml"
+    mode: '0644'
+
+- name: Move config to /etc
+  become: true
+  command: mv /tmp/deepflow-agent.yaml /etc/deepflow-agent.yaml
+
+- name: Start deepflow-agent (systemd)
+  when: init_system == 'systemd'
+  become: true
+  systemd:
+    name: deepflow-agent
+    state: restarted
+    enabled: true
+
+- name: Start deepflow-agent (upstart)
+  when: init_system == 'upstart'
+  become: true
+  service:
+    name: deepflow-agent
+    state: restarted
+    enabled: yes
+
+- name: Show service status
+  shell: systemctl is-active deepflow-agent || service deepflow-agent status || initctl status deepflow-agent
+  register: agent_status
+  changed_when: false
+
+- name: Report Agent status
+  debug:
+    msg: "DeepFlow Agent status on {{ inventory_hostname }}: {{ agent_status.stdout }}"

@@ -1,0 +1,9 @@
+logrotate:
+  path: /var/log/deepflow-agent/*.log
+  frequency: daily
+  rotate: 7
+  compress: true
+  maxsize: 50M
+  copytruncate: true
+  dateext: true
+  config_path: /etc/logrotate.d/deepflow-agent

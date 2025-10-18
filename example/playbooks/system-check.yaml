@@ -1,0 +1,27 @@
+- name: Base checks
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Echo hostname
+      shell: hostname
+
+    - name: Run CPU count script
+      script: ./example/nproc.sh
+
+    - name: Show uptime via command
+      command: /usr/bin/uptime
+
+    - name: Ensure uptime visible
+      shell: pwd
+
+    - name: Get kernel
+      shell: uname -s
+      register: kernel
+
+    - name: Set greet variable
+      set_fact:
+        greet: Hello
+
+    - name: Echo greeting on Linux
+      shell: echo "{{ greet }}"
+      when: kernel == "Linux"

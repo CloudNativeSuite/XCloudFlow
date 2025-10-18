@@ -1,0 +1,15 @@
+- name: Run hostname across all
+  hosts: all
+  vars:
+    motd: "Welcome from Xconfig"
+  tasks:
+    - name: Show hostname
+      shell: hostname
+
+    - name: Upload and run script
+      script: ./example/nproc.sh
+
+    - name: Render MOTD
+      template:
+        src: ./example/motd.tmpl
+        dest: /tmp/motd.txt

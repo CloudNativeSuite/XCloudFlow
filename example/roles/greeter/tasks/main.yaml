@@ -1,0 +1,7 @@
+- name: Run greeting script
+  script: greet.sh
+
+- name: Render greeting template
+  template:
+    src: greet.j2
+    dest: /tmp/greeter.txt
