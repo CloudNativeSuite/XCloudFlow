@@ -15,8 +15,8 @@ pub struct AgentConfig {
 }
 
 /// 加载本地 agent 配置文件（例如 /etc/xconfig-agent.conf）
-pub async fn load_agent_config(path: &str) -> anyhow::Result<AgentConfig> {
-    let content = tokio_fs::read_to_string(path).await?;
+pub async fn load_agent_config<P: AsRef<Path>>(path: P) -> anyhow::Result<AgentConfig> {
+    let content = tokio_fs::read_to_string(path.as_ref()).await?;
     let config: AgentConfig = serde_yaml::from_str(&content)?;
     Ok(config)
 }

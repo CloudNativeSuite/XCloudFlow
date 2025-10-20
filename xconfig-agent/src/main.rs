@@ -16,6 +16,8 @@ use tokio::fs;
 #[command(name = "xconfig-agent", version)]
 #[command(about = "Xconfig Agent - lightweight local playbook runner")]
 struct Cli {
+    #[arg(long, value_name = "FILE", default_value = "/etc/xconfig-agent.conf")]
+    config: PathBuf,
     #[command(subcommand)]
     command: Commands,
 }
@@ -43,17 +45,15 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = Cli::parse();
+    let Cli { config, command } = Cli::parse();
 
     // 加载配置文件（共享）
-    let agent_config: AgentConfig = load_agent_config("/etc/xconfig-agent.conf")
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("⚠️ Failed to load config: {}", e);
-            std::process::exit(1);
-        });
+    let agent_config: AgentConfig = load_agent_config(&config).await.unwrap_or_else(|e| {
+        eprintln!("⚠️ Failed to load config: {}", e);
+        std::process::exit(1);
+    });
 
-    match args.command {
+    match command {
         Commands::Oneshot => {
             let repo_dir = "/tmp/xconfig-agent-sync";
             let branch = agent_config.branch.as_deref().unwrap_or("main");
