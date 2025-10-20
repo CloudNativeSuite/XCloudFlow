@@ -1,10 +1,24 @@
 package executor
 
-// EvaluateWhen returns true if the given expression evaluates to true.
-// Currently this supports basic variable lookup: if the expression corresponds
+import "xconfig/core/parser"
+
+// EvaluateWhen returns true if the given when clause evaluates to true.
+// Currently this supports basic variable lookup: if each expression corresponds
 // to a variable name and that variable's value is truthy (not empty, "false" or
-// "0"), the condition is true. Empty expression evaluates to true.
-func EvaluateWhen(expr string, vars map[string]interface{}) bool {
+// "0"), the condition is true. An empty when clause evaluates to true.
+func EvaluateWhen(when parser.When, vars map[string]interface{}) bool {
+	if when.IsEmpty() {
+		return true
+	}
+	for _, expr := range when.Expressions {
+		if !evaluateExpression(expr, vars) {
+			return false
+		}
+	}
+	return true
+}
+
+func evaluateExpression(expr string, vars map[string]interface{}) bool {
 	if expr == "" {
 		return true
 	}
@@ -47,5 +61,5 @@ func EvaluateWhen(expr string, vars map[string]interface{}) bool {
 			return v != nil
 		}
 	}
-	return key == "true"
+	return expr == "true"
 }

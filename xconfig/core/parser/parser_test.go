@@ -85,6 +85,15 @@ func TestLoadPlaybookWithRoleReferences(t *testing.T) {
 func TestLoadPlaybookWithLegacyModuleArgs(t *testing.T) {
 	tmpDir := t.TempDir()
 
+	writeFile(t, filepath.Join(tmpDir, "roles", "example", "tasks", "main.yml"), `- name: Deploy config
+  template:
+    src: blackbox.yml.j2
+    dest: /opt/blackbox/blackbox.yml
+  when:
+    - feature_enabled
+    - another_flag
+`)
+
 	writeFile(t, filepath.Join(tmpDir, "roles", "legacy", "tasks", "main.yml"), `- name: Render config
   template: src=blackbox.yml.j2 dest=/etc/blackbox.yml mode=0640
 - name: Copy unit
@@ -99,6 +108,7 @@ func TestLoadPlaybookWithLegacyModuleArgs(t *testing.T) {
 	playbookContent := `- name: Legacy modules
   hosts: legacy-hosts
   roles:
+    - roles/example
     - roles/legacy
 `
 
@@ -113,8 +123,8 @@ func TestLoadPlaybookWithLegacyModuleArgs(t *testing.T) {
 		t.Fatalf("expected 1 play, got %d", len(plays))
 	}
 
-	if len(plays[0].Tasks) != 1 {
-		t.Fatalf("expected 1 task, got %d", len(plays[0].Tasks))
+	if len(plays[0].Tasks) != 4 {
+		t.Fatalf("expected 4 tasks, got %d", len(plays[0].Tasks))
 	}
 
 	task := plays[0].Tasks[0]
@@ -136,9 +146,11 @@ func TestLoadPlaybookWithLegacyModuleArgs(t *testing.T) {
 	}
 	if task.When.Expressions[0] != "feature_enabled" || task.When.Expressions[1] != "another_flag" {
 		t.Fatalf("unexpected when expressions: %#v", task.When.Expressions)
-	tasks := plays[0].Tasks
+	}
+
+	tasks := plays[0].Tasks[1:]
 	if len(tasks) != 3 {
-		t.Fatalf("expected 3 tasks, got %d", len(tasks))
+		t.Fatalf("expected 3 legacy tasks, got %d", len(tasks))
 	}
 
 	if tasks[0].Template == nil {
