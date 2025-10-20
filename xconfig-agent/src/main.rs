@@ -9,7 +9,7 @@ mod scheduler;
 use crate::config::{load_agent_config, AgentConfig};
 use crate::executor::run as run_playbook;
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::fs;
 
 #[derive(Parser, Debug)]
@@ -60,9 +60,22 @@ async fn main() -> anyhow::Result<()> {
 
             config::init_or_update_repo(&agent_config.repo, branch, repo_dir)?;
 
+            let workdir_prefix = agent_config
+                .workdir
+                .as_deref()
+                .map(Path::new)
+                .map(|p| {
+                    if p.is_absolute() {
+                        p.to_path_buf()
+                    } else {
+                        Path::new(repo_dir).join(p)
+                    }
+                })
+                .unwrap_or_else(|| Path::new(repo_dir).to_path_buf());
+
             for path in &agent_config.playbook {
-                let full_path = format!("{}/{}", repo_dir, path);
-                let content = fs::read_to_string(&full_path).await?;
+                let playbook_path = workdir_prefix.join(path);
+                let content = fs::read_to_string(&playbook_path).await?;
                 let parsed: Vec<models::Play> = serde_yaml::from_str(&content)?;
                 let results = run_playbook(parsed).await?;
                 result_store::persist(results).await?;

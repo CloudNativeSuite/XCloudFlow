@@ -66,6 +66,7 @@ yaml
 /etc/xconfig-agent.conf
 repo: "https://github.com/your-org/your-repo.git"
 interval: 60
+workdir: playbooks        # 可选：仓库内的子目录前缀
 playbook:
   - sync/playbook.yaml
 示例 playbook.yaml 内容（在 Git 仓库中）

@@ -12,6 +12,7 @@ pub struct AgentConfig {
     pub interval: Option<u64>,
     pub playbook: Vec<String>,
     pub branch: Option<String>,
+    pub workdir: Option<String>,
 }
 
 /// 加载本地 agent 配置文件（例如 /etc/xconfig-agent.conf）
