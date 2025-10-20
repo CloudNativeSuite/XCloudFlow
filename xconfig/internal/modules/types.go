@@ -9,7 +9,7 @@ import (
 // Context provides information for task execution.
 type Context struct {
 	Host inventory.Host
-	Vars map[string]string
+	Vars map[string]interface{}
 	Diff bool
 }
 
