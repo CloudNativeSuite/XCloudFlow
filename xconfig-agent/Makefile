@@ -44,8 +44,7 @@ init:
 	@echo "📁 Creating module files..."
 	@mkdir -p src
 	@touch src/{main.rs,scheduler.rs,config.rs,executor.rs,result_store.rs,models.rs}
-
-        @echo "✅ xconfig-agent init complete."
+	@echo "✅ xconfig-agent init complete."
 
 build:
 	cargo build --release

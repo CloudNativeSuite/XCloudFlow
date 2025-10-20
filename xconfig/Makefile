@@ -9,11 +9,11 @@ PLAYBOOK ?= examples/deploy.yaml
 all: build
 
 init:
-        @test -f go.mod || go mod init $(MODULE)
-        GOPROXY=https://goproxy.cn,direct go get github.com/spf13/cobra@latest
-        GOPROXY=https://goproxy.cn,direct go get golang.org/x/crypto/ssh
-        GOPROXY=https://goproxy.cn,direct go get gopkg.in/yaml.v3
-        go mod tidy
+	@test -f go.mod || go mod init $(MODULE)
+	GOPROXY=https://goproxy.cn,direct go get github.com/spf13/cobra@latest
+	GOPROXY=https://goproxy.cn,direct go get golang.org/x/crypto/ssh
+	GOPROXY=https://goproxy.cn,direct go get gopkg.in/yaml.v3
+	go mod tidy
 
 build:
 	go build -o $(APP_NAME) $(MAIN_FILE)
@@ -40,9 +40,9 @@ clean:
 	rm -f $(APP_NAME)
 
 help:
-        @echo "🧶 Xconfig CLI Usage"
-        @echo ""
-        @echo "make build                编译 xconfig 可执行文件"
+	@echo "🧶 Xconfig CLI Usage"
+	@echo ""
+	@echo "make build                编译 xconfig 可执行文件"
 	@echo "make run                  运行默认入口"
 	@echo "make ansible              执行 ansible all -m ping"
 	@echo "make playbook             执行默认 playbook 文件"

@@ -13,6 +13,8 @@ help:
 
 all: help
 
+build: xcloud-build xconfig-build xconfig-agent-build
+
 xcloud-init:
 	$(MAKE) -C xcloud-cli init
 

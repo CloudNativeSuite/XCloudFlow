@@ -42,4 +42,6 @@ Thumbs.db
 # Optional: ignore specific command output
 /cmd/*.log
 /internal/**/*.log
+xcloud-cli/xcloud
+xconfig/xconfig
 
