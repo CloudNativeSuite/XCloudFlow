@@ -13,6 +13,20 @@ pub async fn run_schedule(agent_config: &AgentConfig) -> anyhow::Result<()> {
     // 启动时 clone 一次
     init_or_update_repo(&agent_config.repo, branch, repo_dir)?;
 
+    let repo_path = Path::new(repo_dir);
+    let workdir_prefix = agent_config
+        .workdir
+        .as_deref()
+        .map(Path::new)
+        .map(|p| {
+            if p.is_absolute() {
+                p.to_path_buf()
+            } else {
+                repo_path.join(p)
+            }
+        })
+        .unwrap_or_else(|| repo_path.to_path_buf());
+
     loop {
         // 检查是否更新
         if check_git_updated(repo_dir, branch)? {
@@ -22,9 +36,9 @@ pub async fn run_schedule(agent_config: &AgentConfig) -> anyhow::Result<()> {
             let mut all_results = vec![];
 
             for path in &agent_config.playbook {
-                let full_path = format!("{}/{}", repo_dir, path);
-                if Path::new(&full_path).exists() {
-                    match tokio::fs::read_to_string(&full_path).await {
+                let playbook_path = workdir_prefix.join(path);
+                if playbook_path.exists() {
+                    match tokio::fs::read_to_string(&playbook_path).await {
                         Ok(content) => match serde_yaml::from_str::<Vec<Play>>(&content) {
                             Ok(parsed) => match executor::run(parsed).await {
                                 Ok(results) => all_results.extend(results),
@@ -35,7 +49,7 @@ pub async fn run_schedule(agent_config: &AgentConfig) -> anyhow::Result<()> {
                         Err(e) => eprintln!("❌ Failed to read file [{}]: {}", path, e),
                     }
                 } else {
-                    eprintln!("⚠️  Playbook not found: {}", full_path);
+                    eprintln!("⚠️  Playbook not found: {}", playbook_path.display());
                 }
             }
 

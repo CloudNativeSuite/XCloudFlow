@@ -16,22 +16,22 @@ type Template struct {
 	Mode string `yaml:"mode,omitempty"`
 }
 
-// UnmarshalYAML allows templates to be specified using Ansible's inline
-// "key=value" argument syntax or a regular mapping.
 func (t *Template) UnmarshalYAML(value *yaml.Node) error {
+	type plain Template
+	*t = Template{}
 	switch value.Kind {
 	case yaml.ScalarNode:
-		args := parseModuleArgs(value.Value)
-		if args == nil {
-			return fmt.Errorf("invalid template arguments: %q", value.Value)
+		var raw string
+		if err := value.Decode(&raw); err != nil {
+			return err
 		}
-		t.Src = args["src"]
-		t.Dest = args["dest"]
-		t.Mode = args["mode"]
+		assignments := parseKeyValueAssignments(raw)
+		t.Src = assignments["src"]
+		t.Dest = assignments["dest"]
+		t.Mode = assignments["mode"]
 		return nil
 	case yaml.MappingNode:
-		type templateAlias Template
-		var tmp templateAlias
+		var tmp plain
 		if err := value.Decode(&tmp); err != nil {
 			return err
 		}
@@ -48,22 +48,22 @@ type Copy struct {
 	Mode string `yaml:"mode,omitempty"`
 }
 
-// UnmarshalYAML allows copy tasks to be specified either as a mapping or using
-// inline "key=value" arguments.
 func (c *Copy) UnmarshalYAML(value *yaml.Node) error {
+	type plain Copy
+	*c = Copy{}
 	switch value.Kind {
 	case yaml.ScalarNode:
-		args := parseModuleArgs(value.Value)
-		if args == nil {
-			return fmt.Errorf("invalid copy arguments: %q", value.Value)
+		var raw string
+		if err := value.Decode(&raw); err != nil {
+			return err
 		}
-		c.Src = args["src"]
-		c.Dest = args["dest"]
-		c.Mode = args["mode"]
+		assignments := parseKeyValueAssignments(raw)
+		c.Src = assignments["src"]
+		c.Dest = assignments["dest"]
+		c.Mode = assignments["mode"]
 		return nil
 	case yaml.MappingNode:
-		type copyAlias Copy
-		var tmp copyAlias
+		var tmp plain
 		if err := value.Decode(&tmp); err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ type VultrInstance struct {
 
 type Task struct {
 	Name     string                 `yaml:"name"`
-	When     When                   `yaml:"when,omitempty"`
+	When     string                 `yaml:"when,omitempty"`
 	Shell    string                 `yaml:"shell,omitempty"`
 	Script   string                 `yaml:"script,omitempty"`
 	Template *Template              `yaml:"template,omitempty"`
@@ -122,11 +122,6 @@ type Task struct {
 	Debug    *MessageAction         `yaml:"debug,omitempty"`
 	Vultr    *VultrInstance         `yaml:"vultr,omitempty"`
 	Register string                 `yaml:"register,omitempty"`
-}
-
-// When represents one or more conditional expressions attached to a task.
-type When struct {
-	Expressions []string
 }
 
 // UnmarshalYAML accepts either a single string or a sequence of strings for the
@@ -322,76 +317,14 @@ func loadRoleTasks(base, name string) ([]Task, error) {
 	return tasks, nil
 }
 
-func parseModuleArgs(input string) map[string]string {
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return nil
-	}
-
-	type stateType int
-	const (
-		stateKey stateType = iota
-		stateValue
-	)
-
+func parseKeyValueAssignments(raw string) map[string]string {
 	result := make(map[string]string)
-	var keyBuilder strings.Builder
-	var valueBuilder strings.Builder
-	state := stateKey
-	var quote rune
-
-	flushPair := func() {
-		key := strings.TrimSpace(keyBuilder.String())
-		if key == "" {
-			keyBuilder.Reset()
-			valueBuilder.Reset()
-			return
+	for _, field := range strings.Fields(raw) {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			continue
 		}
-		value := strings.TrimSpace(valueBuilder.String())
-		result[key] = value
-		keyBuilder.Reset()
-		valueBuilder.Reset()
+		result[parts[0]] = parts[1]
 	}
-
-	for _, r := range input {
-		switch state {
-		case stateKey:
-			switch {
-			case r == '=':
-				state = stateValue
-			case r == ' ' || r == '\t':
-				// ignore whitespace between arguments
-				if keyBuilder.Len() > 0 {
-					// standalone key without value is invalid
-					return nil
-				}
-			default:
-				keyBuilder.WriteRune(r)
-			}
-		case stateValue:
-			if quote != 0 {
-				if r == quote {
-					quote = 0
-				} else {
-					valueBuilder.WriteRune(r)
-				}
-				continue
-			}
-			switch r {
-			case '\'', '"':
-				quote = r
-			case ' ', '\t':
-				flushPair()
-				state = stateKey
-			default:
-				valueBuilder.WriteRune(r)
-			}
-		}
-	}
-
-	if keyBuilder.Len() > 0 || valueBuilder.Len() > 0 {
-		flushPair()
-	}
-
 	return result
 }

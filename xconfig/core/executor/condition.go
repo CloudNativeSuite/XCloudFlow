@@ -1,34 +1,14 @@
 package executor
 
-import (
-	"strings"
-
-	"xconfig/core/parser"
-)
-
-// EvaluateWhen returns true if the expressions in the when clause evaluate to
-// true. Currently this supports basic variable lookup: if the expression
-// corresponds to a variable name and that variable's value is truthy (not empty,
-// "false" or "0"), the condition is true. All expressions must evaluate to true
-// for the task to run.
-func EvaluateWhen(cond parser.When, vars map[string]interface{}) bool {
-	if cond.IsEmpty() {
+// EvaluateWhen returns true if the given expression evaluates to true.
+// Currently this supports basic variable lookup: if the expression corresponds
+// to a variable name and that variable's value is truthy (not empty, "false" or
+// "0"), the condition is true. Empty expression evaluates to true.
+func EvaluateWhen(expr string, vars map[string]interface{}) bool {
+	if expr == "" {
 		return true
 	}
-	for _, expr := range cond.Expressions {
-		if !evaluateExpression(expr, vars) {
-			return false
-		}
-	}
-	return true
-}
-
-func evaluateExpression(expr string, vars map[string]interface{}) bool {
-	key := strings.TrimSpace(expr)
-	if key == "" {
-		return true
-	}
-	if val, ok := vars[key]; ok {
+	if val, ok := vars[expr]; ok {
 		switch v := val.(type) {
 		case string:
 			switch v {
