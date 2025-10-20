@@ -3,8 +3,18 @@ MAIN_FILE := main.go
 MODULE := xconfig
 TAG ?= latest
 PLAYBOOK ?= examples/deploy.yaml
+OS := $(shell uname -s)
+BINARY_PATH := /usr/local/bin/$(APP_NAME)
 
-.PHONY: all build run clean init ansible playbook vault cmdb plugin help
+ifeq ($(OS),Darwin)
+BINARY_PATH := /opt/homebrew/bin/$(APP_NAME)
+endif
+
+ifeq ($(OS),Windows_NT)
+BINARY_PATH := $(APP_NAME).exe
+endif
+
+.PHONY: all build run clean init ansible playbook vault cmdb plugin help install
 
 all: build
 
@@ -17,6 +27,15 @@ init:
 
 build:
 	go build -o $(APP_NAME) $(MAIN_FILE)
+
+install: build
+	@echo "📥 Installing binary for $(OS) → $(BINARY_PATH)"
+	@if [ "$(OS)" = "Windows_NT" ]; then \
+		echo "⚠️ Windows detected. Please copy $(APP_NAME).exe manually to a directory in your PATH."; \
+	else \
+		install -m 755 $(APP_NAME) $(BINARY_PATH); \
+		echo "✅ Installed to $(BINARY_PATH)"; \
+	fi
 
 run:
 	go run $(MAIN_FILE)
