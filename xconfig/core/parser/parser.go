@@ -2,8 +2,10 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -11,12 +13,65 @@ import (
 type Template struct {
 	Src  string `yaml:"src"`
 	Dest string `yaml:"dest"`
+	Mode string `yaml:"mode,omitempty"`
+}
+
+func (t *Template) UnmarshalYAML(value *yaml.Node) error {
+	type plain Template
+	*t = Template{}
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var raw string
+		if err := value.Decode(&raw); err != nil {
+			return err
+		}
+		assignments := parseKeyValueAssignments(raw)
+		t.Src = assignments["src"]
+		t.Dest = assignments["dest"]
+		t.Mode = assignments["mode"]
+		return nil
+	case yaml.MappingNode:
+		var tmp plain
+		if err := value.Decode(&tmp); err != nil {
+			return err
+		}
+		*t = Template(tmp)
+		return nil
+	default:
+		return fmt.Errorf("unsupported template format: %v", value.Kind)
+	}
 }
 
 type Copy struct {
 	Src  string `yaml:"src"`
 	Dest string `yaml:"dest"`
 	Mode string `yaml:"mode,omitempty"`
+}
+
+func (c *Copy) UnmarshalYAML(value *yaml.Node) error {
+	type plain Copy
+	*c = Copy{}
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var raw string
+		if err := value.Decode(&raw); err != nil {
+			return err
+		}
+		assignments := parseKeyValueAssignments(raw)
+		c.Src = assignments["src"]
+		c.Dest = assignments["dest"]
+		c.Mode = assignments["mode"]
+		return nil
+	case yaml.MappingNode:
+		var tmp plain
+		if err := value.Decode(&tmp); err != nil {
+			return err
+		}
+		*c = Copy(tmp)
+		return nil
+	default:
+		return fmt.Errorf("unsupported copy format: %v", value.Kind)
+	}
 }
 
 type Stat struct {
@@ -49,24 +104,24 @@ type VultrInstance struct {
 }
 
 type Task struct {
-	Name     string            `yaml:"name"`
-	When     string            `yaml:"when,omitempty"`
-	Shell    string            `yaml:"shell,omitempty"`
-	Script   string            `yaml:"script,omitempty"`
-	Template *Template         `yaml:"template,omitempty"`
-	Command  string            `yaml:"command,omitempty"`
-	Copy     *Copy             `yaml:"copy,omitempty"`
-	Stat     *Stat             `yaml:"stat,omitempty"`
-	Apt      *PackageAction    `yaml:"apt,omitempty"`
-	Yum      *PackageAction    `yaml:"yum,omitempty"`
-	Systemd  *ServiceAction    `yaml:"systemd,omitempty"`
-	Service  *ServiceAction    `yaml:"service,omitempty"`
-	Setup    bool              `yaml:"setup,omitempty"`
-	SetFact  map[string]string `yaml:"set_fact,omitempty"`
-	Fail     *MessageAction    `yaml:"fail,omitempty"`
-	Debug    *MessageAction    `yaml:"debug,omitempty"`
-	Vultr    *VultrInstance    `yaml:"vultr,omitempty"`
-	Register string            `yaml:"register,omitempty"`
+	Name     string                 `yaml:"name"`
+	When     string                 `yaml:"when,omitempty"`
+	Shell    string                 `yaml:"shell,omitempty"`
+	Script   string                 `yaml:"script,omitempty"`
+	Template *Template              `yaml:"template,omitempty"`
+	Command  string                 `yaml:"command,omitempty"`
+	Copy     *Copy                  `yaml:"copy,omitempty"`
+	Stat     *Stat                  `yaml:"stat,omitempty"`
+	Apt      *PackageAction         `yaml:"apt,omitempty"`
+	Yum      *PackageAction         `yaml:"yum,omitempty"`
+	Systemd  *ServiceAction         `yaml:"systemd,omitempty"`
+	Service  *ServiceAction         `yaml:"service,omitempty"`
+	Setup    bool                   `yaml:"setup,omitempty"`
+	SetFact  map[string]interface{} `yaml:"set_fact,omitempty"`
+	Fail     *MessageAction         `yaml:"fail,omitempty"`
+	Debug    *MessageAction         `yaml:"debug,omitempty"`
+	Vultr    *VultrInstance         `yaml:"vultr,omitempty"`
+	Register string                 `yaml:"register,omitempty"`
 }
 
 // Type returns the module name associated with this task.
@@ -107,14 +162,44 @@ func (t Task) Type() string {
 	}
 }
 
+type RoleRef struct {
+	Name string
+}
+
+// UnmarshalYAML allows RoleRef to be specified either as a string or as a
+// mapping with a "role" key, mirroring Ansible's playbook syntax.
+func (r *RoleRef) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var name string
+		if err := value.Decode(&name); err != nil {
+			return err
+		}
+		r.Name = name
+		return nil
+	case yaml.MappingNode:
+		var tmp struct {
+			Role string `yaml:"role"`
+		}
+		if err := value.Decode(&tmp); err != nil {
+			return err
+		}
+		if tmp.Role == "" {
+			return fmt.Errorf("role mapping missing 'role' key")
+		}
+		r.Name = tmp.Role
+		return nil
+	default:
+		return fmt.Errorf("unsupported role format: %v", value.Kind)
+	}
+}
+
 type Play struct {
-	Name  string            `yaml:"name"`
-	Hosts string            `yaml:"hosts"`
-	Vars  map[string]string `yaml:"vars,omitempty"`
-	Roles []struct {
-		Role string `yaml:"role"`
-	} `yaml:"roles,omitempty"`
-	Tasks []Task `yaml:"tasks,omitempty"`
+	Name  string                 `yaml:"name"`
+	Hosts string                 `yaml:"hosts"`
+	Vars  map[string]interface{} `yaml:"vars,omitempty"`
+	Roles []RoleRef              `yaml:"roles,omitempty"`
+	Tasks []Task                 `yaml:"tasks,omitempty"`
 }
 
 // LoadPlaybook parses the given playbook YAML and expands any referenced roles.
@@ -133,7 +218,7 @@ func LoadPlaybook(path string) ([]Play, error) {
 	for i := range plays {
 		var allTasks []Task
 		for _, r := range plays[i].Roles {
-			ts, err := loadRoleTasks(base, r.Role)
+			ts, err := loadRoleTasks(base, r.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -147,7 +232,26 @@ func LoadPlaybook(path string) ([]Play, error) {
 }
 
 func loadRoleTasks(base, name string) ([]Task, error) {
-	roleDir := filepath.Join(base, "roles", name)
+	cleanName := strings.TrimSuffix(name, string(filepath.Separator))
+	cleanName = filepath.Clean(cleanName)
+
+	candidates := []string{
+		filepath.Join(base, cleanName),
+		filepath.Join(base, "roles", cleanName),
+	}
+
+	var roleDir string
+	for _, candidate := range candidates {
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			roleDir = candidate
+			break
+		}
+	}
+
+	if roleDir == "" {
+		return nil, fmt.Errorf("role '%s' not found", name)
+	}
+
 	dir := filepath.Join(roleDir, "tasks")
 	path := filepath.Join(dir, "main.yaml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -173,4 +277,16 @@ func loadRoleTasks(base, name string) ([]Task, error) {
 		}
 	}
 	return tasks, nil
+}
+
+func parseKeyValueAssignments(raw string) map[string]string {
+	result := make(map[string]string)
+	for _, field := range strings.Fields(raw) {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result
 }
