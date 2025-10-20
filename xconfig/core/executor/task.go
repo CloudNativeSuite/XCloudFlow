@@ -10,7 +10,10 @@ import (
 )
 
 // ExecuteTask dispatches the task to the appropriate module handler.
-func ExecuteTask(task parser.Task, host inventory.Host, vars map[string]string, diff bool) ssh.CommandResult {
+func ExecuteTask(task parser.Task, host inventory.Host, vars map[string]interface{}, diff bool) ssh.CommandResult {
+	if vars == nil {
+		vars = make(map[string]interface{})
+	}
 	ctx := modules.Context{Host: host, Vars: vars, Diff: diff}
 
 	var res ssh.CommandResult

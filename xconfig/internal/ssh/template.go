@@ -11,7 +11,7 @@ import (
 )
 
 // RenderTemplate renders the given template file with data and uploads it to the remote host
-func RenderTemplate(h inventory.Host, src, dest string, data map[string]string, diff bool) CommandResult {
+func RenderTemplate(h inventory.Host, src, dest string, data map[string]interface{}, diff bool) CommandResult {
 	content, err := os.ReadFile(src)
 	if err != nil {
 		return CommandResult{

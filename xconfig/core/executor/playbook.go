@@ -32,13 +32,13 @@ func (e *Executor) Execute(playbook []parser.Play, inventoryPath string) {
 	for i := range playbook {
 		play := &playbook[i]
 		if play.Vars == nil {
-			play.Vars = make(map[string]string)
+			play.Vars = make(map[string]interface{})
 		}
 
-		copyVars := func(src map[string]string) map[string]string {
-			dst := make(map[string]string, len(src))
+		copyVars := func(src map[string]interface{}) map[string]interface{} {
+			dst := make(map[string]interface{}, len(src))
 			for k, v := range src {
-				dst[k] = v
+				dst[k] = cloneValue(v)
 			}
 			return dst
 		}
@@ -51,7 +51,7 @@ func (e *Executor) Execute(playbook []parser.Play, inventoryPath string) {
 			continue
 		}
 
-		hostVars := make(map[string]map[string]string, len(hosts))
+		hostVars := make(map[string]map[string]interface{}, len(hosts))
 		for _, h := range hosts {
 			hostVars[h.Name] = copyVars(play.Vars)
 			if _, ok := stats[h.Name]; !ok {
@@ -70,7 +70,7 @@ func (e *Executor) Execute(playbook []parser.Play, inventoryPath string) {
 			for _, host := range hosts {
 				vars := hostVars[host.Name]
 				wg.Add(1)
-				go func(h inventory.Host, vars map[string]string) {
+				go func(h inventory.Host, vars map[string]interface{}) {
 					defer wg.Done()
 					sem <- struct{}{}
 					defer func() { <-sem }()
@@ -128,4 +128,23 @@ func (e *Executor) Execute(playbook []parser.Play, inventoryPath string) {
 		}
 	}
 	printRecap(stats)
+}
+
+func cloneValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		copied := make(map[string]interface{}, len(val))
+		for k, vv := range val {
+			copied[k] = cloneValue(vv)
+		}
+		return copied
+	case []interface{}:
+		copied := make([]interface{}, len(val))
+		for i, vv := range val {
+			copied[i] = cloneValue(vv)
+		}
+		return copied
+	default:
+		return v
+	}
 }

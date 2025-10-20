@@ -2,8 +2,10 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -107,14 +109,44 @@ func (t Task) Type() string {
 	}
 }
 
+type RoleRef struct {
+	Name string
+}
+
+// UnmarshalYAML allows RoleRef to be specified either as a string or as a
+// mapping with a "role" key, mirroring Ansible's playbook syntax.
+func (r *RoleRef) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var name string
+		if err := value.Decode(&name); err != nil {
+			return err
+		}
+		r.Name = name
+		return nil
+	case yaml.MappingNode:
+		var tmp struct {
+			Role string `yaml:"role"`
+		}
+		if err := value.Decode(&tmp); err != nil {
+			return err
+		}
+		if tmp.Role == "" {
+			return fmt.Errorf("role mapping missing 'role' key")
+		}
+		r.Name = tmp.Role
+		return nil
+	default:
+		return fmt.Errorf("unsupported role format: %v", value.Kind)
+	}
+}
+
 type Play struct {
-	Name  string            `yaml:"name"`
-	Hosts string            `yaml:"hosts"`
-	Vars  map[string]string `yaml:"vars,omitempty"`
-	Roles []struct {
-		Role string `yaml:"role"`
-	} `yaml:"roles,omitempty"`
-	Tasks []Task `yaml:"tasks,omitempty"`
+	Name  string                 `yaml:"name"`
+	Hosts string                 `yaml:"hosts"`
+	Vars  map[string]interface{} `yaml:"vars,omitempty"`
+	Roles []RoleRef              `yaml:"roles,omitempty"`
+	Tasks []Task                 `yaml:"tasks,omitempty"`
 }
 
 // LoadPlaybook parses the given playbook YAML and expands any referenced roles.
@@ -133,7 +165,7 @@ func LoadPlaybook(path string) ([]Play, error) {
 	for i := range plays {
 		var allTasks []Task
 		for _, r := range plays[i].Roles {
-			ts, err := loadRoleTasks(base, r.Role)
+			ts, err := loadRoleTasks(base, r.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -147,7 +179,26 @@ func LoadPlaybook(path string) ([]Play, error) {
 }
 
 func loadRoleTasks(base, name string) ([]Task, error) {
-	roleDir := filepath.Join(base, "roles", name)
+	cleanName := strings.TrimSuffix(name, string(filepath.Separator))
+	cleanName = filepath.Clean(cleanName)
+
+	candidates := []string{
+		filepath.Join(base, cleanName),
+		filepath.Join(base, "roles", cleanName),
+	}
+
+	var roleDir string
+	for _, candidate := range candidates {
+		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+			roleDir = candidate
+			break
+		}
+	}
+
+	if roleDir == "" {
+		return nil, fmt.Errorf("role '%s' not found", name)
+	}
+
 	dir := filepath.Join(roleDir, "tasks")
 	path := filepath.Join(dir, "main.yaml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
