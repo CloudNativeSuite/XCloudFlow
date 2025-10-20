@@ -12,3 +12,7 @@ var pluginCmd = &cobra.Command{
 		fmt.Println("[Xconfig] Plugin system not implemented yet.")
 	},
 }
+
+func init() {
+	addCommandOnce(rootCmd, pluginCmd)
+}

@@ -5,11 +5,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/spf13/cobra"
 	"xconfig/core/executor"
 	"xconfig/core/parser"
 	"xconfig/internal/inventory"
 	"xconfig/internal/ssh"
-	"github.com/spf13/cobra"
 )
 
 var module, args string
@@ -78,5 +78,5 @@ func init() {
 	remoteCmd.Flags().IntVarP(&MaxWorkers, "forks", "f", 5, "Max parallel tasks")
 	remoteCmd.Flags().BoolVarP(&CheckMode, "check", "C", false, "Check mode (dry-run)")
 	remoteCmd.Flags().BoolVarP(&AggregateOutput, "aggregate", "A", false, "Aggregate identical output")
-	rootCmd.AddCommand(remoteCmd)
+	addCommandOnce(rootCmd, remoteCmd)
 }

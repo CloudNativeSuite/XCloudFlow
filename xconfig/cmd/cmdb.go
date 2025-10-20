@@ -12,3 +12,7 @@ var cmdbCmd = &cobra.Command{
 		fmt.Println("[Xconfig] CMDB export not implemented yet.")
 	},
 }
+
+func init() {
+	addCommandOnce(rootCmd, cmdbCmd)
+}
