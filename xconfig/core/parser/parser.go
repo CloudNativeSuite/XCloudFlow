@@ -124,6 +124,44 @@ type Task struct {
 	Register string                 `yaml:"register,omitempty"`
 }
 
+// UnmarshalYAML accepts either a single string or a sequence of strings for the
+// `when` clause, matching Ansible's syntax.
+func (w *When) UnmarshalYAML(value *yaml.Node) error {
+	switch value.Kind {
+	case 0:
+		return nil
+	case yaml.ScalarNode:
+		var expr string
+		if err := value.Decode(&expr); err != nil {
+			return err
+		}
+		expr = strings.TrimSpace(expr)
+		if expr != "" {
+			w.Expressions = []string{expr}
+		}
+		return nil
+	case yaml.SequenceNode:
+		var exprs []string
+		for _, node := range value.Content {
+			var expr string
+			if err := node.Decode(&expr); err != nil {
+				return err
+			}
+			expr = strings.TrimSpace(expr)
+			if expr != "" {
+				exprs = append(exprs, expr)
+			}
+		}
+		w.Expressions = exprs
+		return nil
+	default:
+		return fmt.Errorf("unsupported when format: %v", value.Kind)
+	}
+}
+
+// IsEmpty returns true when no expressions are defined.
+func (w When) IsEmpty() bool { return len(w.Expressions) == 0 }
+
 // Type returns the module name associated with this task.
 func (t Task) Type() string {
 	switch {

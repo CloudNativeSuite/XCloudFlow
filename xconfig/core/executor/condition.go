@@ -47,5 +47,5 @@ func EvaluateWhen(expr string, vars map[string]interface{}) bool {
 			return v != nil
 		}
 	}
-	return expr == "true"
+	return key == "true"
 }

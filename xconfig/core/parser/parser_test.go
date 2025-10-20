@@ -113,6 +113,29 @@ func TestLoadPlaybookWithLegacyModuleArgs(t *testing.T) {
 		t.Fatalf("expected 1 play, got %d", len(plays))
 	}
 
+	if len(plays[0].Tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(plays[0].Tasks))
+	}
+
+	task := plays[0].Tasks[0]
+	if task.Template == nil {
+		t.Fatalf("expected template to be parsed")
+	}
+
+	expectedSrc := filepath.Join(tmpDir, "roles", "example", "templates", "blackbox.yml.j2")
+	if task.Template.Src != expectedSrc {
+		t.Fatalf("unexpected template src: %s", task.Template.Src)
+	}
+
+	if task.Template.Dest != "/opt/blackbox/blackbox.yml" {
+		t.Fatalf("unexpected template dest: %s", task.Template.Dest)
+	}
+
+	if len(task.When.Expressions) != 2 {
+		t.Fatalf("expected two when expressions, got %d", len(task.When.Expressions))
+	}
+	if task.When.Expressions[0] != "feature_enabled" || task.When.Expressions[1] != "another_flag" {
+		t.Fatalf("unexpected when expressions: %#v", task.When.Expressions)
 	tasks := plays[0].Tasks
 	if len(tasks) != 3 {
 		t.Fatalf("expected 3 tasks, got %d", len(tasks))
