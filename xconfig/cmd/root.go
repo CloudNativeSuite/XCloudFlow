@@ -24,13 +24,6 @@ func Execute() {
 func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
-	// 添加全局子命令
-	rootCmd.AddCommand(remoteCmd)
-	rootCmd.AddCommand(playbookCmd)
-	rootCmd.AddCommand(vaultCmd)
-	rootCmd.AddCommand(cmdbCmd)
-	rootCmd.AddCommand(pluginCmd)
-
 	// 注册全局标志（所有子命令可用）
 	rootCmd.PersistentFlags().BoolVarP(
 		&AggregateOutput,
@@ -52,4 +45,13 @@ func printBanner() {
 	if err == nil {
 		fmt.Println(string(content))
 	}
+}
+
+func addCommandOnce(parent *cobra.Command, child *cobra.Command) {
+	for _, existing := range parent.Commands() {
+		if existing == child || existing.Name() == child.Name() {
+			return
+		}
+	}
+	parent.AddCommand(child)
 }

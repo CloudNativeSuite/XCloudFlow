@@ -12,3 +12,7 @@ var vaultCmd = &cobra.Command{
 		fmt.Println("[Xconfig] Vault feature is not implemented yet.")
 	},
 }
+
+func init() {
+	addCommandOnce(rootCmd, vaultCmd)
+}

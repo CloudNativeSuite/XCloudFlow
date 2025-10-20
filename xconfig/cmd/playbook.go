@@ -38,5 +38,5 @@ func init() {
 	playbookCmd.Flags().IntVarP(&MaxWorkers, "forks", "f", 5, "Max parallel tasks")
 	playbookCmd.Flags().BoolVarP(&AggregateOutput, "aggregate", "A", false, "Aggregate output from identical results")
 	playbookCmd.Flags().BoolVarP(&CheckMode, "check", "C", false, "Dry-run mode")
-	rootCmd.AddCommand(playbookCmd)
+	addCommandOnce(rootCmd, playbookCmd)
 }
