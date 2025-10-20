@@ -105,7 +105,7 @@ type VultrInstance struct {
 
 type Task struct {
 	Name     string                 `yaml:"name"`
-	When     string                 `yaml:"when,omitempty"`
+	When     When                   `yaml:"when,omitempty"`
 	Shell    string                 `yaml:"shell,omitempty"`
 	Script   string                 `yaml:"script,omitempty"`
 	Template *Template              `yaml:"template,omitempty"`
@@ -122,6 +122,14 @@ type Task struct {
 	Debug    *MessageAction         `yaml:"debug,omitempty"`
 	Vultr    *VultrInstance         `yaml:"vultr,omitempty"`
 	Register string                 `yaml:"register,omitempty"`
+}
+
+// When represents the conditional expressions associated with a task.
+// It matches Ansible's behaviour where a `when` clause can be a single
+// string or a list of strings. The expressions are stored in their trimmed
+// form so the evaluator can simply iterate over them.
+type When struct {
+	Expressions []string
 }
 
 // UnmarshalYAML accepts either a single string or a sequence of strings for the
