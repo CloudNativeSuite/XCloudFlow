@@ -13,12 +13,65 @@ import (
 type Template struct {
 	Src  string `yaml:"src"`
 	Dest string `yaml:"dest"`
+	Mode string `yaml:"mode,omitempty"`
+}
+
+func (t *Template) UnmarshalYAML(value *yaml.Node) error {
+	type plain Template
+	*t = Template{}
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var raw string
+		if err := value.Decode(&raw); err != nil {
+			return err
+		}
+		assignments := parseKeyValueAssignments(raw)
+		t.Src = assignments["src"]
+		t.Dest = assignments["dest"]
+		t.Mode = assignments["mode"]
+		return nil
+	case yaml.MappingNode:
+		var tmp plain
+		if err := value.Decode(&tmp); err != nil {
+			return err
+		}
+		*t = Template(tmp)
+		return nil
+	default:
+		return fmt.Errorf("unsupported template format: %v", value.Kind)
+	}
 }
 
 type Copy struct {
 	Src  string `yaml:"src"`
 	Dest string `yaml:"dest"`
 	Mode string `yaml:"mode,omitempty"`
+}
+
+func (c *Copy) UnmarshalYAML(value *yaml.Node) error {
+	type plain Copy
+	*c = Copy{}
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var raw string
+		if err := value.Decode(&raw); err != nil {
+			return err
+		}
+		assignments := parseKeyValueAssignments(raw)
+		c.Src = assignments["src"]
+		c.Dest = assignments["dest"]
+		c.Mode = assignments["mode"]
+		return nil
+	case yaml.MappingNode:
+		var tmp plain
+		if err := value.Decode(&tmp); err != nil {
+			return err
+		}
+		*c = Copy(tmp)
+		return nil
+	default:
+		return fmt.Errorf("unsupported copy format: %v", value.Kind)
+	}
 }
 
 type Stat struct {
@@ -51,24 +104,24 @@ type VultrInstance struct {
 }
 
 type Task struct {
-	Name     string            `yaml:"name"`
-	When     string            `yaml:"when,omitempty"`
-	Shell    string            `yaml:"shell,omitempty"`
-	Script   string            `yaml:"script,omitempty"`
-	Template *Template         `yaml:"template,omitempty"`
-	Command  string            `yaml:"command,omitempty"`
-	Copy     *Copy             `yaml:"copy,omitempty"`
-	Stat     *Stat             `yaml:"stat,omitempty"`
-	Apt      *PackageAction    `yaml:"apt,omitempty"`
-	Yum      *PackageAction    `yaml:"yum,omitempty"`
-	Systemd  *ServiceAction    `yaml:"systemd,omitempty"`
-	Service  *ServiceAction    `yaml:"service,omitempty"`
-	Setup    bool              `yaml:"setup,omitempty"`
-	SetFact  map[string]string `yaml:"set_fact,omitempty"`
-	Fail     *MessageAction    `yaml:"fail,omitempty"`
-	Debug    *MessageAction    `yaml:"debug,omitempty"`
-	Vultr    *VultrInstance    `yaml:"vultr,omitempty"`
-	Register string            `yaml:"register,omitempty"`
+	Name     string                 `yaml:"name"`
+	When     string                 `yaml:"when,omitempty"`
+	Shell    string                 `yaml:"shell,omitempty"`
+	Script   string                 `yaml:"script,omitempty"`
+	Template *Template              `yaml:"template,omitempty"`
+	Command  string                 `yaml:"command,omitempty"`
+	Copy     *Copy                  `yaml:"copy,omitempty"`
+	Stat     *Stat                  `yaml:"stat,omitempty"`
+	Apt      *PackageAction         `yaml:"apt,omitempty"`
+	Yum      *PackageAction         `yaml:"yum,omitempty"`
+	Systemd  *ServiceAction         `yaml:"systemd,omitempty"`
+	Service  *ServiceAction         `yaml:"service,omitempty"`
+	Setup    bool                   `yaml:"setup,omitempty"`
+	SetFact  map[string]interface{} `yaml:"set_fact,omitempty"`
+	Fail     *MessageAction         `yaml:"fail,omitempty"`
+	Debug    *MessageAction         `yaml:"debug,omitempty"`
+	Vultr    *VultrInstance         `yaml:"vultr,omitempty"`
+	Register string                 `yaml:"register,omitempty"`
 }
 
 // Type returns the module name associated with this task.
@@ -224,4 +277,16 @@ func loadRoleTasks(base, name string) ([]Task, error) {
 		}
 	}
 	return tasks, nil
+}
+
+func parseKeyValueAssignments(raw string) map[string]string {
+	result := make(map[string]string)
+	for _, field := range strings.Fields(raw) {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result
 }
